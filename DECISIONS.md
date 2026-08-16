@@ -70,3 +70,27 @@ Append-only log of non-obvious choices and why. Newest last.
 14. **shadcn `Button` renders non-native elements when given `render={<Link/>}`**
     (e.g. admin quick actions), producing a base-ui console warning about
     `nativeButton`. Cosmetic only; leave unless tests gate on clean console.
+
+## M2 — Student information management
+
+15. **Server-action forms require `name` attributes on every field.** `useActionState`
+    + `<form action={formAction}>` serialize the form via the DOM; inputs with only
+    `id` (as our first cut had) submit empty `FormData`, so the server saw every
+    field as `undefined` and validation failed with a 200 (no redirect). Symptom:
+    action returns `{status:'error'}` and the URL never changes. Every form built from
+    now on must give fields both `id` (for labels/tests) and `name` (for submission).
+
+16. **E2E suites run serially (`workers: 1`), not fully parallel.** The students suite
+    mutates shared seeded rows (row 1 is edited/uploaded-to by multiple tests); running
+    tests in parallel caused cross-test races and flaky failures. Keep DB-mutating e2e
+    suites serial; parallelize only read-only suites (or make each test self-contained).
+
+17. **Auto admission numbers: compute-then-retry on `P2002`.** `nextAdmissionNo()`
+    derives the next sequence from the latest row (cheap, no lock); the `create`
+    transaction wraps the insert in a 5-attempt retry loop so a concurrent insert
+    that wins the unique key just recomputes the candidate instead of failing.
+
+18. **Turbopack panicked with `generate_source_map was canceled` (same TaskId, twice)
+    until `.next/` was deleted.** Stale incremental cache after many builds; `rm -rf
+    .next` resolved it. Also `.next/dev/types/routes.d.ts` corrupted after aborted
+    runs — same remedy. If Turbopack misbehaves mid-module, clean `.next` first.

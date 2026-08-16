@@ -128,3 +128,14 @@
     @apply font-sans;
   }
 }
+
+/* Keep printable views (e.g. student ID card) clean of the app chrome. */
+@media print {
+  aside,
+  header {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+}
