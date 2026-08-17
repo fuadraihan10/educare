@@ -49,6 +49,7 @@ export const navByRole: Record<string, RoleNav> = {
   TEACHER: {
     items: [
       { label: 'Dashboard', href: '/teacher', icon: LayoutDashboard },
+      { label: 'My Profile', href: '/teacher/profile', icon: UserRound },
       { label: 'My Students', href: '/teacher/students', icon: Users },
       { label: 'Attendance', href: '/teacher/attendance', icon: CalendarCheck },
       { label: 'Exams & Grades', href: '/teacher/exams', icon: FileText },

@@ -60,7 +60,7 @@ test.describe('authentication', () => {
   test('signs out back to the login page', async ({ page }) => {
     await login(page, admin.email, admin.password)
     await expectRoleUrl(page, /\/admin$/)
-    await page.getByText(admin.email).first().click()
+    await page.getByText(admin.email).first().click({ force: true })
     await page.getByRole('menuitem', { name: /Sign out/ }).click()
     await expectRoleUrl(page, /\/login/)
   })

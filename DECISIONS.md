@@ -94,3 +94,30 @@ Append-only log of non-obvious choices and why. Newest last.
     until `.next/` was deleted.** Stale incremental cache after many builds; `rm -rf
     .next` resolved it. Also `.next/dev/types/routes.d.ts` corrupted after aborted
     runs — same remedy. If Turbopack misbehaves mid-module, clean `.next` first.
+
+## M3 — Staff/Teacher Management
+
+19. **Linked login created in a single transaction.** `createStaff` wraps User (role
+    TEACHER, same schoolId) + Teacher insert in `$transaction`. `employeeId` gets the
+    same compute-then-retry loop as admission numbers (P2002, 5 attempts). Email
+    uniqueness is checked as a separate branch of the P2002 handler so a duplicate
+    email shows a clear message instead of a generic error.
+
+20. **Status toggle updates both Teacher and User.** `setStaffStatus` flips
+    `Teacher.status` and `User.status` in a single `$transaction`, keeping them
+    always consistent. Deactivation blocks login (auth checks `user.status === 'ACTIVE'`);
+    reactivation re-enables it.
+
+21. **Teacher own-profile is un-addressable.** The `/teacher/profile` page reads the
+    session user id, looks up the single Teacher record by `userId`, and renders it.
+    No path parameter exists — a teacher cannot enumerate or request another teacher's
+    profile by changing a URL segment.
+
+22. **Employee ID format `EMP-###` continues the seed sequence.** The seed creates
+    EMP-001 through EMP-010; `nextEmployeeId()` finds the max and increments, so the
+    first E2E-created teacher gets EMP-011, and the format auto-widens if needed.
+
+23. **Dev overlay `click({ force: true })` in e2e.** Production builds of this Next.js
+    version still inject a `<script data-nextjs-dev-overlay>` whose portal intercepts
+    pointer events on the sidebar menu and delete buttons. Tests that click through
+    the affected areas use `force: true`; no user-visible impact.

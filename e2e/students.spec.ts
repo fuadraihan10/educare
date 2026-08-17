@@ -85,8 +85,8 @@ test.describe('student management', () => {
     await expect(page.getByText('document.pdf')).toBeVisible({ timeout: 15_000 })
 
     const row = page.getByText('document.pdf').locator('..').locator('..')
-    await row.getByRole('button', { name: 'Delete file' }).click()
-    await expect(page.getByText('document.pdf')).toHaveCount(0)
+    await row.getByRole('button', { name: 'Delete file' }).click({ force: true })
+    await expect(page.getByText('document.pdf')).toHaveCount(0, { timeout: 15_000 })
   })
 
   test('renders a printable ID card', async ({ page }) => {

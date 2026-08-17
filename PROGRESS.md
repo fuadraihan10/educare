@@ -3,10 +3,10 @@
 ## Status header
 
 - Current phase: Phase 2 — Build
-- Current module: M2 — Student Information Management
-- Last verification: e2e 13/13 (auth 8 + students 5), unit 9/9, tsc + lint + build pass
+- Current module: M3 — Staff/Teacher Management
+- Last verification: e2e 18/18 (auth 8 + students 5 + staff 5), unit 9/9, tsc + lint + build pass
 - Current blocker: none
-- Next action: M3 — Staff/Teacher Management
+- Next action: M4 — Class & Section Management
 
 ## Environment notes
 
@@ -25,7 +25,7 @@
 | M0 Scaffold & infrastructure | **Done** | Fresh Next.js 16 + TS strict + ESLint + Tailwind 4 + shadcn/ui; Prisma 7 with driver adapter; migrations + deterministic seed; db scripts; docs (ARCHITECTURE/PROGRESS/DECISIONS); auth skeleton; proxy guard; base libs (db, auth, permissions, audit, email, storage, rate-limit); typecheck/lint/build pass; committed. |
 | M1 Auth & role-based dashboards | **Done** | Email/password login works for all 5 roles; bcrypt hashing; login rate-limited; wrong password rejected; each role lands on its own dashboard; direct URL access to another role's area redirects; logout works; full login/logout cycle persists; verification passes. |
 | M2 Student Information Management | **Done** | Admin can CRUD students (personal + guardian info), upload/validate photos & documents, generate a unique admission number and an ID card; lists are paginated and searchable; data persists and edits are audited; verification passes. |
-| M3 Staff/Teacher Management | Not Started | Admin CRUD for teachers with employee IDs and linked login accounts; a teacher sees their own profile only; verification passes. |
+| M3 Staff/Teacher Management | **Done** | Admin CRUD for teachers with employee IDs and linked login accounts; teacher sees own profile only; verification passes. |
 | M4 Class & Section Management | Not Started | Admin CRUD classes/sections bound to an academic year; unique class code; assign a class teacher; verification passes. |
 | M5 Subject/Course Management | Not Started | Admin CRUD subjects; assign teachers to class+subject (teacher's teaching boundary); verification passes. |
 | M6 Admission/Enrollment workflow | Not Started | Application can be submitted; admin approves (creates Student + Enrollment in one transaction) or rejects; no double enrollment in an active class; audit logged; verification passes. |
