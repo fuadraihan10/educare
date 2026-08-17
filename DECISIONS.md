@@ -121,3 +121,21 @@ Append-only log of non-obvious choices and why. Newest last.
     version still inject a `<script data-nextjs-dev-overlay>` whose portal intercepts
     pointer events on the sidebar menu and delete buttons. Tests that click through
     the affected areas use `force: true`; no user-visible impact.
+
+## M4 — Class & Section Management
+
+24. **No separate Section model — section is a plain string on Class.** The schema
+    uses `name` (e.g. "Grade 6") + `section` (e.g. "A") + `code` (e.g. "G6-A") as
+    three separate fields. A unique constraint on `(academicYearId, name, section)`
+    prevents duplicate sections within the same year.
+
+25. **Delete protected by enrollment count.** `deleteClass` checks
+    `students + enrollments > 0` before deleting; if any exist, the action silently
+    returns without deleting. Admin sees the delete button only when the counts are
+    zero, so the UI stays consistent.
+
+26. **Prisma `include` type inference failure on complex queries.** `getClass` uses
+    nested includes (_count, enrollments with student, assignments with teacher+subject)
+    and TypeScript infers just the base Class model. Fixed by adding an explicit
+    return type (`ClassDetail`) and casting the result. Simple `getTeacher`-style
+    includes work fine; the threshold appears to be ~3+ levels of nesting.

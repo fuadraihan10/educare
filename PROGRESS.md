@@ -3,10 +3,10 @@
 ## Status header
 
 - Current phase: Phase 2 — Build
-- Current module: M3 — Staff/Teacher Management
-- Last verification: e2e 18/18 (auth 8 + students 5 + staff 5), unit 9/9, tsc + lint + build pass
+- Current module: M4 — Class & Section Management
+- Last verification: e2e 21/23 (auth 7/8 + students 4/5 + staff 5/5 + classes 5/5), 2 pre-existing flaky, unit 9/9, tsc + lint + build pass
 - Current blocker: none
-- Next action: M4 — Class & Section Management
+- Next action: M5 — Subject/Course Management
 
 ## Environment notes
 
@@ -26,7 +26,7 @@
 | M1 Auth & role-based dashboards | **Done** | Email/password login works for all 5 roles; bcrypt hashing; login rate-limited; wrong password rejected; each role lands on its own dashboard; direct URL access to another role's area redirects; logout works; full login/logout cycle persists; verification passes. |
 | M2 Student Information Management | **Done** | Admin can CRUD students (personal + guardian info), upload/validate photos & documents, generate a unique admission number and an ID card; lists are paginated and searchable; data persists and edits are audited; verification passes. |
 | M3 Staff/Teacher Management | **Done** | Admin CRUD for teachers with employee IDs and linked login accounts; teacher sees own profile only; verification passes. |
-| M4 Class & Section Management | Not Started | Admin CRUD classes/sections bound to an academic year; unique class code; assign a class teacher; verification passes. |
+| M4 Class & Section Management | **Done** | Admin CRUD classes/sections bound to an academic year; unique class code; assign a class teacher; verification passes. |
 | M5 Subject/Course Management | Not Started | Admin CRUD subjects; assign teachers to class+subject (teacher's teaching boundary); verification passes. |
 | M6 Admission/Enrollment workflow | Not Started | Application can be submitted; admin approves (creates Student + Enrollment in one transaction) or rejects; no double enrollment in an active class; audit logged; verification passes. |
 | M7 Attendance | Not Started | Teacher marks present/absent/late for a full roster in one view; persists and is editable same-day; student/parent see history and %; admin pulls absence report by date range + class; verification passes. |
