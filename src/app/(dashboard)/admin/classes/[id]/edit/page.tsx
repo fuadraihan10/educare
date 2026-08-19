@@ -1,4 +1,7 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
+import { ArrowLeft } from 'lucide-react'
 
 import { requirePage } from '@/lib/permissions'
 import { getClass, listAcademicYears } from '@/lib/classes'
@@ -6,6 +9,9 @@ import { prisma } from '@/lib/db'
 import { updateClass } from '@/lib/classes/actions'
 import { ClassForm, type ClassFormInitial } from '@/components/classes/class-form'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageHeader } from '@/components/page-header'
+
+export const metadata: Metadata = { title: 'Edit Class' }
 
 export default async function EditClassPage({
   params,
@@ -36,20 +42,22 @@ export default async function EditClassPage({
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Edit {cls.name} — Section {cls.section}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          <span className="font-mono">{cls.code}</span>
-        </p>
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Class details</CardTitle>
+    <div className="space-y-6 animate-fade-in">
+      <PageHeader
+        title={`Edit ${cls.name}`}
+        subtitle={<>Section {cls.section}</>}
+        breadcrumb={
+          <Link href={`/admin/classes/${id}`} className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors">
+            <ArrowLeft className="size-3.5" /> {cls.name} — {cls.section}
+          </Link>
+        }
+      />
+
+      <Card className="overflow-hidden">
+        <CardHeader className="border-b border-border/30 bg-muted/20 px-6 py-4">
+          <CardTitle className="text-base font-semibold">Class Details</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           <ClassForm
             action={updateClass.bind(null, id)}
             initial={initial}

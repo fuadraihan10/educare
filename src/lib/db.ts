@@ -1,3 +1,5 @@
+import '@/lib/env'
+
 import 'server-only'
 
 import { PrismaPg } from '@prisma/adapter-pg'
@@ -32,6 +34,10 @@ export type {
   Payment,
   Announcement,
 } from '@/generated/prisma/client'
+
+export async function disconnect(): Promise<void> {
+  await prisma.$disconnect()
+}
 
 export {
   Role,

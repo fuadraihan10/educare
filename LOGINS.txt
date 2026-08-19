@@ -1,9 +1,0 @@
-Login accounts for Sunrise School (seeded in prisma/seed.ts)
-================================================================
-
-Role          Email                      Password
-------------------------------------------------------------------
-Admin         admin@school.example       Admin@123
-Teacher       teacher1..10@school.example  Teacher@123
-Student       student1..30@school.example  Student@123
-Parent        parent1..20@school.example   Parent@123

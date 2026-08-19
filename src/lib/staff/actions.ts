@@ -10,6 +10,8 @@ import { prisma } from '@/lib/db'
 import { requireRole } from '@/lib/permissions'
 import { auditLog } from '@/lib/audit'
 import { nextEmployeeId } from '@/lib/staff'
+import { validatePasswordStrength } from '@/lib/password'
+import { deliverNotificationToRole } from '@/lib/notifications'
 
 export type StaffFormState = {
   status: 'idle' | 'success' | 'error'
@@ -66,8 +68,8 @@ function fieldErrors(error: z.ZodError): Record<string, string> {
   return out
 }
 
-function message(e: unknown): string {
-  return e instanceof Error ? e.message : 'Something went wrong.'
+function message(_e: unknown): string {
+  return 'Something went wrong.'
 }
 
 function isUniqueViolation(e: unknown): boolean {
@@ -105,7 +107,11 @@ export async function createStaff(_prev: StaffFormState, formData: FormData): Pr
     return { status: 'error', message: 'Please fix the highlighted fields.', errors: fieldErrors(parsed.error) }
   }
   const { password, ...values } = parsed.data
-  const passwordHash = await hash(password, 10)
+  const strength = validatePasswordStrength(password)
+  if (!strength.valid) {
+    return { status: 'error', message: strength.errors[0] }
+  }
+  const passwordHash = await hash(password, 12)
 
   try {
     let created: { id: string; employeeId: string } | null = null
@@ -116,6 +122,7 @@ export async function createStaff(_prev: StaffFormState, formData: FormData): Pr
           const user = await tx.user.create({
             data: {
               email: values.email,
+              regNo: employeeId,
               passwordHash,
               name: values.name,
               role: 'TEACHER',
@@ -130,6 +137,9 @@ export async function createStaff(_prev: StaffFormState, formData: FormData): Pr
         break
       } catch (e) {
         if (isUniqueOn(e, 'employeeId')) continue
+        if (isUniqueOn(e, 'regNo')) {
+          continue
+        }
         if (isUniqueOn(e, 'email')) {
           return { status: 'error', message: 'That email is already used by another account.' }
         }
@@ -144,6 +154,15 @@ export async function createStaff(_prev: StaffFormState, formData: FormData): Pr
       entity: 'Teacher',
       entityId: created.id,
       details: { employeeId: created.employeeId, name: values.name },
+    })
+    await deliverNotificationToRole('ADMIN', {
+      title: 'New Staff Added',
+      body: `"${values.name}" has been added as staff with employee ID ${created.employeeId}.`,
+      type: 'success',
+      category: 'staff',
+      entity: 'Teacher',
+      entityId: created.id,
+      link: `/admin/staff/${created.id}`,
     })
     revalidatePath('/admin/staff')
     redirect(`/admin/staff/${created.id}`)
@@ -166,6 +185,13 @@ export async function updateStaff(id: string, _prev: StaffFormState, formData: F
   }
   const { password, ...values } = parsed.data
 
+  if (password) {
+    const strength = validatePasswordStrength(password)
+    if (!strength.valid) {
+      return { status: 'error', message: strength.errors[0] }
+    }
+  }
+
   try {
     await prisma.$transaction(async (tx) => {
       await tx.teacher.update({ where: { id }, data: teacherData(values) })
@@ -175,7 +201,7 @@ export async function updateStaff(id: string, _prev: StaffFormState, formData: F
           data: {
             email: values.email,
             name: values.name,
-            ...(password ? { passwordHash: await hash(password, 10) } : {}),
+            ...(password ? { passwordHash: await hash(password, 12) } : {}),
           },
         })
       }

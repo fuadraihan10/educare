@@ -1,12 +1,14 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Pencil, Trash2, Users, BookOpen } from 'lucide-react'
+import type { Metadata } from 'next'
+import { Pencil, Trash2, Users, BookOpen, ArrowLeft } from 'lucide-react'
 
 import { requirePage } from '@/lib/permissions'
 import { getClass } from '@/lib/classes'
 import { deleteClass } from '@/lib/classes/actions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageHeader } from '@/components/page-header'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +20,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+
+export const metadata: Metadata = { title: 'Class Details' }
 
 export default async function ClassDetailPage({
   params,
@@ -33,68 +37,63 @@ export default async function ClassDetailPage({
   const canDelete = cls._count.students === 0 && cls._count.enrollments === 0
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {cls.name} — Section {cls.section}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            <span className="font-mono">{cls.code}</span>
-            {cls.room ? ` · ${cls.room}` : ''}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" nativeButton={false} render={<Link href={`/admin/classes/${id}/edit`} />}>
-            <Pencil /> Edit
-          </Button>
-          {canDelete && (
-            <AlertDialog>
-              <AlertDialogTrigger render={<Button variant="destructive" size="sm"><Trash2 /> Delete</Button>} />
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete this class?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This class has no students or enrollments and can be safely removed.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <form action={deleteClass.bind(null, id)}>
-                    <AlertDialogAction type="submit" variant="destructive">
-                      Delete
-                    </AlertDialogAction>
-                  </form>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-        </div>
-      </div>
+    <div className="space-y-6 animate-fade-in">
+      <PageHeader
+        title={cls.name}
+        subtitle={<>Section {cls.section}{cls.room ? ` · ${cls.room}` : ''}</>}
+        breadcrumb={
+          <Link href="/admin/classes" className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors">
+            <ArrowLeft className="size-3.5" /> Classes
+          </Link>
+        }
+      >
+        <Button variant="outline" size="sm" nativeButton={false} render={<Link href={`/admin/classes/${id}/edit`} />}>
+          <Pencil /> Edit
+        </Button>
+        {canDelete && (
+          <AlertDialog>
+            <AlertDialogTrigger render={<Button variant="destructive" size="sm"><Trash2 /> Delete</Button>} />
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete this class?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This class has no students or enrollments and can be safely removed.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <form action={deleteClass.bind(null, id)}>
+                  <AlertDialogAction type="submit" variant="destructive">Delete</AlertDialogAction>
+                </form>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+      </PageHeader>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Details</CardTitle>
+          <Card className="overflow-hidden">
+            <CardHeader className="border-b border-border/30 bg-muted/20 px-6 py-4">
+              <CardTitle className="text-base font-semibold">Details</CardTitle>
             </CardHeader>
-            <CardContent>
-              <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+            <CardContent className="p-6">
+              <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
                 <div>
-                  <dt className="text-xs text-muted-foreground">Code</dt>
-                  <dd className="text-sm font-medium font-mono">{cls.code}</dd>
+                  <dt className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Code</dt>
+                  <dd className="text-sm font-medium font-mono mt-0.5">{cls.code}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-muted-foreground">Room</dt>
-                  <dd className="text-sm font-medium">{cls.room ?? '—'}</dd>
+                  <dt className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Room</dt>
+                  <dd className="text-sm font-medium mt-0.5">{cls.room ?? '—'}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-muted-foreground">Academic year</dt>
-                  <dd className="text-sm font-medium">{cls.academicYear.name}{cls.academicYear.isActive ? ' (active)' : ''}</dd>
+                  <dt className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Academic Year</dt>
+                  <dd className="text-sm font-medium mt-0.5">{cls.academicYear.name}{cls.academicYear.isActive ? ' (active)' : ''}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-muted-foreground">Class teacher</dt>
-                  <dd className="text-sm font-medium">
+                  <dt className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Class Teacher</dt>
+                  <dd className="text-sm font-medium mt-0.5">
                     {cls.classTeacher ? (
                       <Link href={`/admin/staff/${cls.classTeacher.id}`} className="underline underline-offset-2 hover:text-primary">
                         {cls.classTeacher.name} <span className="font-mono text-xs text-muted-foreground">({cls.classTeacher.employeeId})</span>
@@ -108,21 +107,24 @@ export default async function ClassDetailPage({
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <Card className="overflow-hidden">
+            <CardHeader className="border-b border-border/30 bg-muted/20 px-6 py-4 flex flex-row items-center justify-between">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <Users className="size-4" /> Students ({cls._count.students})
               </CardTitle>
+              {cls._count.students > 0 && (
+                <Button variant="outline" size="sm" nativeButton={false} render={<Link href={`/admin/classes/${id}/students`}>View All</Link>} />
+              )}
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               {cls.enrollments.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No students enrolled.</p>
+                <p className="text-sm text-muted-foreground text-center py-4">No students enrolled.</p>
               ) : (
                 <ul className="space-y-2">
                   {cls.enrollments.map((e) => (
-                    <li key={e.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                    <li key={e.id} className="flex items-center justify-between rounded-xl border border-border/30 bg-muted/20 px-4 py-3 text-sm transition-colors hover:bg-muted/40">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                           {e.student.rollNo ?? '—'}
                         </div>
                         <div>
@@ -140,7 +142,7 @@ export default async function ClassDetailPage({
                 </ul>
               )}
               {cls._count.students > 5 && (
-                <p className="mt-2 text-xs text-muted-foreground">
+                <p className="mt-3 text-xs text-muted-foreground text-center">
                   Showing first 5 of {cls._count.students} students.
                 </p>
               )}
@@ -148,23 +150,21 @@ export default async function ClassDetailPage({
           </Card>
         </div>
 
-        <Card className="h-fit">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BookOpen className="size-4" /> Teaching assignments ({cls._count.assignments})
+        <Card className="overflow-hidden h-fit">
+          <CardHeader className="border-b border-border/30 bg-muted/20 px-6 py-4">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <BookOpen className="size-4" /> Teaching Assignments ({cls._count.assignments})
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="p-6 space-y-2">
             {cls.assignments.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No assignments yet.</p>
+              <p className="text-sm text-muted-foreground text-center py-4">No assignments yet.</p>
             ) : (
-              <ul className="space-y-1.5 text-sm">
+              <ul className="space-y-2 text-sm">
                 {cls.assignments.map((a) => (
-                  <li key={a.id} className="flex items-center justify-between rounded-md border px-3 py-1.5">
-                    <span>{a.subject.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {a.teacher.name}
-                    </span>
+                  <li key={a.id} className="flex items-center justify-between rounded-xl border border-border/30 bg-muted/20 px-4 py-3 transition-colors hover:bg-muted/40">
+                    <span className="font-medium">{a.subject.name}</span>
+                    <span className="text-xs text-muted-foreground">{a.teacher.name}</span>
                   </li>
                 ))}
               </ul>

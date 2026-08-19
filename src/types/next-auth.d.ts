@@ -6,7 +6,9 @@ declare module 'next-auth' {
       id: string
       name: string
       email: string
+      regNo: string
       role: Role
+      sessionId: string
     }
   }
 
@@ -19,6 +21,8 @@ declare module 'next-auth/jwt' {
   interface JWT {
     id: string
     role: Role
+    regNo: string
+    sessionId: string
   }
 }
 
@@ -26,5 +30,7 @@ declare module '@auth/core/jwt' {
   interface JWT {
     id: string
     role: Role
+    regNo: string
+    sessionId: string
   }
 }

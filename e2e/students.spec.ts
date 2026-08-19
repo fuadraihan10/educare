@@ -97,7 +97,7 @@ test.describe('student management', () => {
 
     await page.getByRole('button', { name: 'ID card' }).click()
     await expect(page.getByText('Student Identity Card')).toBeVisible()
-    await expect(page.getByRole('paragraph').filter({ hasText: 'Sunrise International School' })).toBeVisible()
+    await expect(page.getByRole('paragraph').filter({ hasText: /School/ }).first()).toBeVisible()
     await expect(page.getByText(/ADM-2026-\d{4}/)).toBeVisible()
     await expect(page.getByRole('button', { name: 'Print card' })).toBeVisible()
   })

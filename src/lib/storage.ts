@@ -6,7 +6,7 @@ import path from 'node:path'
 
 import { FileCategory } from '@/generated/prisma/client'
 
-const storageRoot = path.resolve(process.cwd(), process.env.UPLOAD_STORAGE_DIR ?? 'storage')
+const storageRoot = path.resolve(/* turbopackIgnore: true */ process.cwd(), process.env.UPLOAD_STORAGE_DIR ?? 'storage')
 
 export const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
 export const MAX_IMAGE_SIZE = 5 * 1024 * 1024 // 5 MB
@@ -42,8 +42,8 @@ function validateMime(mimeType: string): MimeInfo {
 }
 
 function resolveSafePath(storageKey: string): string {
-  const abs = path.resolve(storageRoot, storageKey)
-  if (!abs.startsWith(path.resolve(storageRoot))) {
+  const abs = path.resolve(/* turbopackIgnore: true */ storageRoot, storageKey)
+  if (!abs.startsWith(path.resolve(/* turbopackIgnore: true */ storageRoot))) {
     throw new StorageError('Invalid storage key.')
   }
   return abs

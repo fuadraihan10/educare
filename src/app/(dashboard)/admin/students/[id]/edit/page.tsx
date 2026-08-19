@@ -1,4 +1,7 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
+import { ArrowLeft } from 'lucide-react'
 
 import { requirePage } from '@/lib/permissions'
 import { prisma } from '@/lib/db'
@@ -6,6 +9,9 @@ import { getStudent, fullName } from '@/lib/students'
 import { updateStudent } from '@/lib/students/actions'
 import { StudentForm, type StudentFormInitial } from '@/components/students/student-form'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageHeader } from '@/components/page-header'
+
+export const metadata: Metadata = { title: 'Edit Student' }
 
 export default async function EditStudentPage({
   params,
@@ -15,14 +21,15 @@ export default async function EditStudentPage({
   await requirePage('SUPER_ADMIN', 'ADMIN')
   const { id } = await params
 
-  const student = await getStudent(id)
+  const [student, classes] = await Promise.all([
+    getStudent(id),
+    prisma.class.findMany({
+      where: { academicYear: { isActive: true } },
+      select: { id: true, name: true, section: true },
+      orderBy: [{ name: 'asc' }, { section: 'asc' }],
+    }),
+  ])
   if (!student) notFound()
-
-  const classes = await prisma.class.findMany({
-    where: { academicYear: { isActive: true } },
-    select: { id: true, name: true, section: true },
-    orderBy: [{ name: 'asc' }, { section: 'asc' }],
-  })
 
   const initial: StudentFormInitial = {
     firstName: student.firstName,
@@ -46,18 +53,22 @@ export default async function EditStudentPage({
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Edit student</h1>
-        <p className="text-sm text-muted-foreground">
-          {fullName(student)} · <span className="font-mono">{student.admissionNo}</span>
-        </p>
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Student details</CardTitle>
+    <div className="space-y-6 animate-fade-in">
+      <PageHeader
+        title="Edit Student"
+        subtitle={<>{fullName(student)} · <span className="font-mono text-xs">{student.admissionNo}</span></>}
+        breadcrumb={
+          <Link href={`/admin/students/${id}`} className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors">
+            <ArrowLeft className="size-3.5" /> {fullName(student)}
+          </Link>
+        }
+      />
+
+      <Card className="overflow-hidden">
+        <CardHeader className="border-b border-border/30 bg-muted/20 px-6 py-4">
+          <CardTitle className="text-base font-semibold">Personal Information</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           <StudentForm
             action={updateStudent.bind(null, id)}
             classes={classes}

@@ -159,16 +159,28 @@ model Setting {
 // ---------------------------------------------------------------------------
 
 model User {
-  id           String     @id @default(cuid())
-  email        String     @unique
-  passwordHash String
-  name         String
-  role         Role       @default(STUDENT)
-  status       UserStatus @default(ACTIVE)
-  schoolId     String?
-  school       School?    @relation(fields: [schoolId], references: [id])
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id                  String     @id @default(cuid())
+  regNo               String     @unique
+  email               String     @unique
+  passwordHash        String
+  name                String
+  displayName         String?
+  phone               String?
+  bio                 String?
+  designation         String?
+  department          String?
+  avatarUrl           String?
+  timezone            String     @default("UTC")
+  language            String     @default("en")
+  role                Role       @default(STUDENT)
+  status              UserStatus @default(ACTIVE)
+  forcePasswordChange Boolean  @default(false)
+  lastLoginAt         DateTime?
+  lastLoginIp         String?
+  schoolId            String?
+  school              School?    @relation(fields: [schoolId], references: [id])
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
 
   student       Student?
   teacher       Teacher?
@@ -184,6 +196,13 @@ model User {
   paymentsSubmitted Payment[]            @relation("PaymentSubmittedBy")
   paymentsConfirmed Payment[]            @relation("PaymentConfirmedBy")
   announcementsCreated Announcement[]    @relation("AnnouncementAuthor")
+  passwordResetTokens  PasswordResetToken[]
+  passwordResetRequests PasswordResetRequest[] @relation("RequestedBy")
+  processedResetRequests PasswordResetRequest[] @relation("ProcessedResetRequests")
+  preferences  UserPreference?
+  sessions     UserSession[]
+  activities   UserActivityLog[]
+  notifications Notification[]
 }
 
 model Student {
@@ -645,4 +664,126 @@ model AuditLog {
 
   @@index([entity, entityId])
   @@index([actorId])
+}
+
+model UserPreference {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inAppNotifications  Boolean @default(true)
+  pushNotifications   Boolean @default(false)
+  notifStudentUpdates Boolean @default(true)
+  notifAttendanceAlerts Boolean @default(true)
+  notifFeeAlerts     Boolean @default(true)
+  notifExamResults   Boolean @default(true)
+  notifAdmissions    Boolean @default(true)
+  notifStaffUpdates  Boolean @default(true)
+  notifSystem        Boolean @default(true)
+  notifSecurity      Boolean @default(true)
+  notifReports       Boolean @default(false)
+  theme              String  @default("system")
+  sidebarBehavior    String  @default("expanded")
+  density            String  @default("comfortable")
+  dateFormat         String  @default("YYYY-MM-DD")
+  timeFormat         String  @default("24h")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model UserSession {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash   String   @unique
+  device      String?
+  browser     String?
+  os          String?
+  ipAddress   String?
+  isCurrent   Boolean  @default(false)
+  lastActiveAt DateTime @default(now())
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+}
+
+model UserActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String
+  category  String   @default("general")
+  details   Json?
+  ipAddress String?
+  device    String?
+  result    String   @default("success")
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  type      String   @default("info")       // info | success | warning | error
+  category  String   @default("system")     // matches notif* preference keys
+  entity    String?                          // e.g. "Student", "Invoice", "Attendance"
+  entityId  String?
+  link      String?                          // deep-link to the relevant page
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+  deliveries NotificationDelivery[]
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+}
+
+model NotificationDelivery {
+  id             String   @id @default(cuid())
+  notificationId String
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  channel        String                           // "email" | "sms" | "in_app"
+  status         String   @default("pending")     // "pending" | "sent" | "failed" | "skipped"
+  error          String?
+  sentAt         DateTime?
+  createdAt      DateTime @default(now())
+
+  @@index([notificationId])
+  @@index([channel, status])
+}
+
+model PasswordResetRequest {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation("RequestedBy", fields: [userId], references: [id], onDelete: Cascade)
+  type          String                            // "FORGOT" | "CHANGE"
+  status        String   @default("PENDING")      // "PENDING" | "APPROVED" | "REJECTED"
+  pinHash       String?  @unique
+  pinPlain      String?                            // shown to admin once, then cleared
+  expiresAt     DateTime?
+  requestedAt   DateTime @default(now())
+  processedAt   DateTime?
+  processedById String?
+  processedBy   User?    @relation("ProcessedResetRequests", fields: [processedById], references: [id])
+  createdAt     DateTime @default(now())
+
+  @@index([userId, status])
+  @@index([status])
+  @@index([pinHash])
 }

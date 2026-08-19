@@ -13,11 +13,11 @@ export type ClassListItem = {
   _count: { students: number }
 }
 
-// Derives a code from name + section, e.g. "Grade 11" + "A" -> "G11-A".
+// Derives a code from name + section, e.g. "Class 9" + "A" -> "C9-A".
 export function deriveCode(name: string, section: string): string {
   const match = name.match(/(\d+)/)
   const num = match ? match[1] : name.slice(0, 3).toUpperCase()
-  return `G${num}-${section}`
+  return `C${num}-${section}`
 }
 
 export async function listClasses(input: {
@@ -121,4 +121,43 @@ export async function listAcademicYears() {
     select: { id: true, name: true, isActive: true },
     orderBy: { startDate: 'desc' },
   })
+}
+
+export type ClassStudent = {
+  id: string
+  firstName: string
+  lastName: string
+  admissionNo: string
+  rollNo: number | null
+  userId: string | null
+  user: { regNo: string; email: string } | null
+}
+
+export async function getStudentsByClass(classId: string, opts?: { page?: number; pageSize?: number }): Promise<{ students: ClassStudent[]; total: number; cls: { name: string; section: string; code: string } | null }> {
+  const page = Math.max(1, opts?.page ?? 1)
+  const pageSize = Math.min(100, Math.max(1, opts?.pageSize ?? 50))
+
+  const cls = await prisma.class.findUnique({
+    where: { id: classId },
+    select: { name: true, section: true, code: true },
+  })
+  if (!cls) return { students: [], total: 0, cls: null }
+
+  const where = { classId, enrollments: { some: { status: 'ACTIVE' as const } } }
+
+  const [students, total] = await prisma.$transaction([
+    prisma.student.findMany({
+      where,
+      select: {
+        id: true, firstName: true, lastName: true, admissionNo: true, rollNo: true, userId: true,
+        user: { select: { regNo: true, email: true } },
+      },
+      orderBy: { rollNo: 'asc' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.student.count({ where }),
+  ])
+
+  return { students: students as ClassStudent[], total, cls }
 }

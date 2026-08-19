@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import type { Role, User } from '@/generated/prisma/client'
 import { prisma } from '@/lib/db'
+import { hasPermission as rbacHasPermission, type Permission } from '@/lib/rbac'
 
 export const roleHome: Record<Role, string> = {
   SUPER_ADMIN: '/admin',
@@ -66,4 +67,9 @@ export const requireRole = cache(async (...roles: Role[]): Promise<User> => {
 
 export function isRole(user: User | null | undefined, roles: Role[]): boolean {
   return !!user && roles.includes(user.role)
+}
+
+export function hasPermission(user: User | null | undefined, permission: Permission): boolean {
+  if (!user) return false
+  return rbacHasPermission(user.role, permission)
 }

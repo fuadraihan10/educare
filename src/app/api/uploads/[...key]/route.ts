@@ -36,11 +36,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ key: st
   try {
     const { data, mimeType } = await readFile(storageKey)
     const body = new Uint8Array(data.buffer as ArrayBuffer, data.byteOffset, data.byteLength)
+    const safeName = file.originalName.replace(/[\r\n\x00-\x1f"]/g, '_').slice(0, 200)
     return new Response(body, {
       headers: {
         'Content-Type': mimeType,
         'Cache-Control': 'private, max-age=3600',
-        'Content-Disposition': `inline; filename="${file.originalName}"`,
+        'Content-Disposition': `inline; filename="${safeName}"`,
       },
     })
   } catch {

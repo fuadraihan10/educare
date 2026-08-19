@@ -3,19 +3,23 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
+import { hash } from 'bcryptjs'
 import { Prisma } from '@/generated/prisma/client'
 import type { FileCategory } from '@/generated/prisma/client'
 
 import { prisma } from '@/lib/db'
 import { requireRole } from '@/lib/permissions'
 import { auditLog } from '@/lib/audit'
-import { saveFile, deleteFile, StorageError } from '@/lib/storage'
+import { saveFile, deleteFile, StorageError, MAX_FILE_SIZE, MAX_IMAGE_SIZE } from '@/lib/storage'
 import { currentAcademicYear, nextAdmissionNo, formatDate } from '@/lib/students'
+import { generateTempPassword } from '@/lib/password'
 
 export type StudentFormState = {
   status: 'idle' | 'success' | 'error'
   message?: string
   errors?: Record<string, string>
+  regNo?: string
+  studentId?: string
 }
 
 const optionalString = z.string().trim().optional()
@@ -64,8 +68,8 @@ function isUniqueViolation(e: unknown): boolean {
   return e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002'
 }
 
-function message(e: unknown): string {
-  return e instanceof Error ? e.message : 'Something went wrong.'
+function message(_e: unknown): string {
+  return 'Something went wrong.'
 }
 
 async function assignClass(tx: Prisma.TransactionClient, classId: string | undefined, studentId: string) {
@@ -83,6 +87,7 @@ async function assignClass(tx: Prisma.TransactionClient, classId: string | undef
 async function readPhoto(formData: FormData) {
   const photo = formData.get('photo')
   if (!(photo instanceof File) || photo.size === 0) return null
+  if (photo.size > MAX_IMAGE_SIZE) throw new Error('Photo exceeds maximum size of 5MB.')
   const saved = await saveFile({
     data: Buffer.from(await photo.arrayBuffer()),
     mimeType: photo.type,
@@ -113,6 +118,9 @@ async function createStudentWithAdmission(yearNumber: number, values: StudentVal
     photoUrl: photo?.storageKey ?? null,
   }
 
+  const tempPassword = generateTempPassword()
+  const passwordHash = await hash(tempPassword, 12)
+
   for (let attempt = 0; attempt < 5; attempt++) {
     const admissionNo = await nextAdmissionNo(yearNumber)
     try {
@@ -139,7 +147,31 @@ async function createStudentWithAdmission(yearNumber: number, values: StudentVal
             data: { classId: placement.classId, rollNo: placement.rollNo },
           })
         }
-        return { id: student.id, admissionNo }
+
+        // Auto-create user account
+        const prefix = `STU-${yearNumber}-`
+        const last = await tx.user.findFirst({
+          where: { regNo: { startsWith: prefix } },
+          orderBy: { regNo: 'desc' },
+          select: { regNo: true },
+        })
+        const seq = last ? (Number(last.regNo.slice(last.regNo.lastIndexOf('-') + 1)) || 0) + 1 : 1
+        const regNo = `${prefix}${String(seq).padStart(4, '0')}`
+
+        const user = await tx.user.create({
+          data: {
+            regNo,
+            email: values.email || `${regNo.toLowerCase()}@educare.edu.bd`,
+            passwordHash,
+            name: `${values.firstName} ${values.lastName}`,
+            role: 'STUDENT',
+            forcePasswordChange: true,
+          },
+          select: { id: true },
+        })
+        await tx.student.update({ where: { id: student.id }, data: { userId: user.id } })
+
+        return { id: student.id, admissionNo, regNo }
       })
     } catch (e) {
       if (isUniqueViolation(e)) continue
@@ -160,16 +192,17 @@ export async function createStudent(_prev: StudentFormState, formData: FormData)
   const photo = await readPhoto(formData)
 
   try {
-    const { id, admissionNo } = await createStudentWithAdmission(yearNumber, parsed.data, actor.id, photo)
+    const { id, admissionNo, regNo } = await createStudentWithAdmission(yearNumber, parsed.data, actor.id, photo)
     await auditLog({
       actorId: actor.id,
       action: 'CREATE',
       entity: 'Student',
       entityId: id,
-      details: { admissionNo, firstName: parsed.data.firstName, lastName: parsed.data.lastName },
+      details: { admissionNo, regNo, firstName: parsed.data.firstName, lastName: parsed.data.lastName },
     })
     revalidatePath('/admin/students')
-    redirect(`/admin/students/${id}`)
+    revalidatePath('/admin/students/' + id)
+    return { status: 'success', message: `Student created. Reg No: ${regNo}`, regNo, studentId: id }
   } catch (e) {
     if (photo) await deleteFile(photo.storageKey).catch(() => {})
     if (e instanceof StorageError || e instanceof Prisma.PrismaClientKnownRequestError) {
@@ -237,6 +270,16 @@ export async function updateStudent(id: string, _prev: StudentFormState, formDat
         const rollNo = cls
           ? ((await tx.student.aggregate({ where: { classId: cls.id }, _max: { rollNo: true } }))._max.rollNo ?? 0) + 1
           : null
+
+        // Deactivate old enrollment for the active academic year
+        const activeYear = await tx.academicYear.findFirst({ where: { isActive: true }, select: { id: true } })
+        if (activeYear) {
+          await tx.enrollment.updateMany({
+            where: { studentId: id, academicYearId: activeYear.id, status: 'ACTIVE' },
+            data: { status: 'COMPLETED' },
+          })
+        }
+
         await tx.student.update({ where: { id }, data: { classId: values.classId || null, rollNo } })
         if (cls) {
           await tx.enrollment.upsert({
@@ -298,6 +341,8 @@ export async function uploadStudentFile(studentId: string, _prev: StudentFormSta
     return { status: 'error', message: 'Invalid file category.' }
   }
 
+  if (file.size > MAX_FILE_SIZE) return { status: 'error', message: 'File exceeds maximum size of 10MB.' }
+
   try {
     const saved = await saveFile({
       data: Buffer.from(await file.arrayBuffer()),
@@ -327,7 +372,7 @@ export async function uploadStudentFile(studentId: string, _prev: StudentFormSta
     revalidatePath(`/admin/students/${studentId}`)
     return { status: 'success', message: 'File uploaded.' }
   } catch (e) {
-    if (e instanceof StorageError) return { status: 'error', message: e.message }
+    if (e instanceof StorageError) return { status: 'error', message: 'File upload failed. Please try again.' }
     throw e
   }
 }

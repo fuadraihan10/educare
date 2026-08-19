@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { Search, UserPlus } from 'lucide-react'
+import type { Metadata } from 'next'
+import { Search, UserPlus, Users } from 'lucide-react'
 
 import { requirePage } from '@/lib/permissions'
 import { listStaff } from '@/lib/staff'
@@ -23,13 +24,13 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
+import { PageHeader } from '@/components/page-header'
+import { EmptyState } from '@/components/empty-state'
+import { staffStatusVariant } from '@/lib/status-variants'
+
+export const metadata: Metadata = { title: 'Staff' }
 
 const PAGE_SIZE = 20
-
-const statusVariant: Record<string, 'default' | 'secondary'> = {
-  ACTIVE: 'default',
-  INACTIVE: 'secondary',
-}
 
 export default async function StaffPage({
   searchParams,
@@ -53,18 +54,18 @@ export default async function StaffPage({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Staff</h1>
-          <p className="text-sm text-muted-foreground">{total} teacher{total === 1 ? '' : 's'}</p>
-        </div>
-        <Button render={<Link href="/admin/staff/new" />}>
-          <UserPlus /> Add teacher
-        </Button>
-      </div>
+    <div className="space-y-6 animate-fade-in">
+      <PageHeader
+        title="Staff"
+        subtitle={`${total} teacher${total === 1 ? '' : 's'}`}
+        action={
+          <Button render={<Link href="/admin/staff/new" />}>
+            <UserPlus /> Add teacher
+          </Button>
+        }
+      />
 
-      <form action="/admin/staff" method="GET" className="flex gap-2">
+      <form action="/admin/staff" method="GET" className="flex flex-wrap items-end gap-3">
         <div className="relative max-w-sm flex-1">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -72,16 +73,18 @@ export default async function StaffPage({
             defaultValue={q}
             placeholder="Search by name, employee id or designation…"
             className="pl-9"
+            aria-label="Search staff"
           />
         </div>
         <Button type="submit" variant="outline">Search</Button>
       </form>
 
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader>
-          <CardTitle>Staff list</CardTitle>
+          <CardTitle className="text-lg">Staff list</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -98,12 +101,16 @@ export default async function StaffPage({
               {staff.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                    No teachers found.
+                    <EmptyState
+                      icon={Users}
+                      title="No teachers found"
+                      description="There are no teachers matching your criteria."
+                    />
                   </TableCell>
                 </TableRow>
               )}
               {staff.map((s) => (
-                <TableRow key={s.id}>
+                <TableRow key={s.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
@@ -121,7 +128,7 @@ export default async function StaffPage({
                       : s.classesTaught.map((c) => `${c.name} ${c.section}`).join(', ')}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={statusVariant[s.status] ?? 'secondary'}>{s.status}</Badge>
+                    <Badge variant={staffStatusVariant[s.status] ?? 'secondary'}>{s.status}</Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="outline" size="sm" nativeButton={false} render={<Link href={`/admin/staff/${s.id}`} />}>
@@ -132,6 +139,7 @@ export default async function StaffPage({
               ))}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 

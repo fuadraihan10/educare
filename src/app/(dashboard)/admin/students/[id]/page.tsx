@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Pencil, FileBadge, Download, Trash2 } from 'lucide-react'
+import type { Metadata } from 'next'
+import { Pencil, FileBadge, Download, Trash2, ArrowLeft } from 'lucide-react'
 
 import { requirePage } from '@/lib/permissions'
 import { getStudent } from '@/lib/students'
@@ -8,11 +9,14 @@ import { deleteStudentFile } from '@/lib/students/actions'
 import { fullName, formatDate, formatSize } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { StudentPhoto } from '@/components/students/student-photo'
 import { DocumentUpload } from '@/components/students/document-upload'
 import { DeactivateButton } from '@/components/students/deactivate-button'
+import { PageHeader } from '@/components/page-header'
+
+export const metadata: Metadata = { title: 'Student Profile' }
 
 export default async function StudentDetailPage({
   params,
@@ -41,62 +45,80 @@ export default async function StudentDetailPage({
   ]
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-4">
-          <StudentPhoto storageKey={student.photoUrl} name={name} size={56} />
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{name}</h1>
-            <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span className="font-mono">{student.admissionNo}</span>
-              {student.class && (
-                <>
-                  <Separator orientation="vertical" className="h-3" />
-                  <span>
-                    {student.class.name} {student.class.section}
-                    {student.rollNo ? ` · Roll ${student.rollNo}` : ''}
-                  </span>
-                </>
-              )}
-            </p>
+    <div className="space-y-6 animate-fade-in">
+      <PageHeader
+        title={name}
+        subtitle={
+          <div className="flex items-center gap-2 mt-1">
+            <span className="font-mono text-xs">{student.admissionNo}</span>
+            {student.class && (
+              <>
+                <Separator orientation="vertical" className="h-3" />
+                <span className="text-xs">
+                  {student.class.name} · Section {student.class.section}
+                  {student.rollNo ? ` · Roll ${student.rollNo}` : ''}
+                </span>
+              </>
+            )}
           </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant={isActive ? 'default' : 'destructive'}>{student.status}</Badge>
-          <Button variant="outline" size="sm" nativeButton={false} render={<Link href={`/admin/students/${id}/edit`} />}>
-            <Pencil /> Edit
-          </Button>
-          <Button variant="outline" size="sm" nativeButton={false} render={<Link href={`/admin/students/${id}/id-card`} />}>
-            <FileBadge /> ID card
-          </Button>
-          <DeactivateButton studentId={id} disabled={!isActive} />
+        }
+        breadcrumb={
+          <Link href="/admin/students" className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors">
+            <ArrowLeft className="size-3.5" /> Students
+          </Link>
+        }
+      >
+        <Badge variant={isActive ? 'default' : 'destructive'} className="text-xs">{student.status}</Badge>
+        <Button variant="outline" size="sm" nativeButton={false} render={<Link href={`/admin/students/${id}/edit`} />}>
+          <Pencil /> Edit
+        </Button>
+        <Button variant="outline" size="sm" nativeButton={false} render={<Link href={`/admin/students/${id}/id-card`} />}>
+          <FileBadge /> ID Card
+        </Button>
+        <DeactivateButton studentId={id} disabled={!isActive} />
+      </PageHeader>
+
+      <div className="flex items-start gap-4">
+        <StudentPhoto storageKey={student.photoUrl} name={name} size={64} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold tracking-tight">{name}</h2>
+          </div>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {student.class ? `${student.class.name} · Section ${student.class.section}` : 'No class assigned'}
+          </p>
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+      <Tabs defaultValue="profile">
+        <TabsList variant="line" className="w-full justify-start border-b rounded-none pb-0">
+          <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="guardian">Guardian</TabsTrigger>
+          <TabsTrigger value="enrollments">Enrollment History</TabsTrigger>
+          <TabsTrigger value="documents">Documents</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="profile">
+          <div className="pt-4">
+            <div className="glass-card rounded-2xl overflow-hidden border border-border/50 p-6">
+              <h3 className="text-sm font-semibold text-foreground mb-4">Personal Information</h3>
+              <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
                 {info.map(([label, value]) => (
                   <div key={label}>
-                    <dt className="text-xs text-muted-foreground">{label}</dt>
-                    <dd className="text-sm font-medium">{value}</dd>
+                    <dt className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</dt>
+                    <dd className="text-sm font-medium mt-0.5">{value}</dd>
                   </div>
                 ))}
               </dl>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+        </TabsContent>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Guardian</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+        <TabsContent value="guardian">
+          <div className="pt-4">
+            <div className="glass-card rounded-2xl overflow-hidden border border-border/50 p-6">
+              <h3 className="text-sm font-semibold text-foreground mb-4">Guardian Information</h3>
+              <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
                 {(
                   [
                     ['Name', student.guardianName],
@@ -106,79 +128,87 @@ export default async function StudentDetailPage({
                   ] as [string, string][]
                 ).map(([label, value]) => (
                   <div key={label}>
-                    <dt className="text-xs text-muted-foreground">{label}</dt>
-                    <dd className="text-sm font-medium">{value}</dd>
+                    <dt className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</dt>
+                    <dd className="text-sm font-medium mt-0.5">{value ?? '—'}</dd>
                   </div>
                 ))}
               </dl>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+        </TabsContent>
 
-          {student.enrollments.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Enrollment history</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
+        <TabsContent value="enrollments">
+          <div className="pt-4 space-y-4">
+            {student.enrollments.length === 0 ? (
+              <div className="glass-card rounded-2xl overflow-hidden border border-border/50 p-6">
+                <p className="text-sm text-muted-foreground text-center py-4">No enrollment history found.</p>
+              </div>
+            ) : (
+              <div className="glass-card rounded-2xl overflow-hidden border border-border/50 p-6 space-y-3">
+                <h3 className="text-sm font-semibold text-foreground">Enrollment History</h3>
                 {student.enrollments.map((en) => (
                   <div
                     key={en.id}
-                    className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+                    className="flex items-center justify-between rounded-xl border border-border/30 bg-muted/20 px-4 py-3 text-sm transition-colors hover:bg-muted/40"
                   >
-                    <span>
-                      {en.class.name} {en.class.section} — {en.academicYear.name}
-                    </span>
-                    <Badge variant="outline">{en.status}</Badge>
+                    <div>
+                      <span className="font-medium">{en.class.name} · Section {en.class.section}</span>
+                      <span className="text-muted-foreground ml-2">— {en.academicYear.name}</span>
+                    </div>
+                    <Badge variant="outline" className="text-xs">{en.status}</Badge>
                   </div>
                 ))}
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        <Card className="h-fit">
-          <CardHeader>
-            <CardTitle>Documents</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <DocumentUpload studentId={id} />
-            {student.files.length === 0 && (
-              <p className="text-sm text-muted-foreground">No documents uploaded yet.</p>
+              </div>
             )}
-            <ul className="space-y-2">
-              {student.files.map((file) => (
-                <li
-                  key={file.id}
-                  className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{file.originalName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {file.category.replace('_', ' ').toLowerCase()} · {formatSize(file.size)} ·{' '}
-                      {file.uploadedBy.name} · {formatDate(file.createdAt)}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      nativeButton={false}
-                      render={<a href={`/api/uploads/${file.storageKey}`} target="_blank" rel="noreferrer" />}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="documents">
+          <div className="pt-4">
+            <div className="glass-card rounded-2xl overflow-hidden border border-border/50 p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-foreground">Documents</h3>
+                <DocumentUpload studentId={id} />
+              </div>
+              {student.files.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No documents uploaded yet.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {student.files.map((file) => (
+                    <li
+                      key={file.id}
+                      className="flex items-center justify-between gap-2 rounded-xl border border-border/30 bg-muted/20 px-4 py-3 text-sm transition-colors hover:bg-muted/40"
                     >
-                      <Download />
-                    </Button>
-                    <form action={deleteStudentFile.bind(null, file.id)}>
-                      <Button variant="ghost" size="icon" type="submit" aria-label="Delete file">
-                        <Trash2 className="text-destructive" />
-                      </Button>
-                    </form>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      </div>
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{file.originalName}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {file.category.replace('_', ' ').toLowerCase()} · {formatSize(file.size)} ·{' '}
+                          {file.uploadedBy.name} · {formatDate(file.createdAt)}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          nativeButton={false}
+                          render={<a href={`/api/uploads/${file.storageKey}`} target="_blank" rel="noreferrer" />}
+                        >
+                          <Download />
+                        </Button>
+                        <form action={deleteStudentFile.bind(null, file.id)}>
+                          <Button variant="ghost" size="icon" type="submit" aria-label="Delete file">
+                            <Trash2 className="text-destructive" />
+                          </Button>
+                        </form>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

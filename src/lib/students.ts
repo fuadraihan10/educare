@@ -63,7 +63,16 @@ export async function currentAcademicYear() {
 
 // Whether the signed-in user may view a given student's data/files.
 export async function canViewStudent(user: User, studentId: string): Promise<boolean> {
-  if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN' || user.role === 'TEACHER') return true
+  if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') return true
+  if (user.role === 'TEACHER') {
+    const teacher = await prisma.teacher.findUnique({ where: { userId: user.id }, select: { id: true } })
+    if (!teacher) return false
+    const assignment = await prisma.teacherAssignment.findFirst({
+      where: { teacherId: teacher.id, class: { students: { some: { id: studentId } } } },
+      select: { id: true },
+    })
+    return assignment !== null
+  }
   if (user.role === 'STUDENT') {
     const s = await prisma.student.findUnique({ where: { userId: user.id }, select: { id: true } })
     return s?.id === studentId

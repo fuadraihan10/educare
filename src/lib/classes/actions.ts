@@ -8,7 +8,6 @@ import { Prisma } from '@/generated/prisma/client'
 import { prisma } from '@/lib/db'
 import { requireRole } from '@/lib/permissions'
 import { auditLog } from '@/lib/audit'
-import { deriveCode } from '@/lib/classes'
 
 export type ClassFormState = {
   status: 'idle' | 'success' | 'error'
@@ -78,7 +77,7 @@ export async function createClass(_prev: ClassFormState, formData: FormData): Pr
       return { status: 'error', message: 'A class with that name/section already exists in this year, or the code is taken.' }
     }
     if (e instanceof Error && e.message === 'NEXT_REDIRECT') throw e
-    return { status: 'error', message: e instanceof Error ? e.message : 'Something went wrong.' }
+    return { status: 'error', message: 'Something went wrong. Please try again.' }
   }
 }
 
@@ -111,7 +110,7 @@ export async function updateClass(id: string, _prev: ClassFormState, formData: F
       return { status: 'error', message: 'A class with that name/section already exists in this year, or the code is taken.' }
     }
     if (e instanceof Error && e.message === 'NEXT_REDIRECT') throw e
-    return { status: 'error', message: e instanceof Error ? e.message : 'Something went wrong.' }
+    return { status: 'error', message: 'Something went wrong. Please try again.' }
   }
 }
 

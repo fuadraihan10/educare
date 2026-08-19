@@ -1,12 +1,12 @@
 import Link from 'next/link'
-import { Search, Plus } from 'lucide-react'
+import type { Metadata } from 'next'
+import { Search, Plus, BookOpen } from 'lucide-react'
 
 import { requirePage } from '@/lib/permissions'
 import { listClasses, listAcademicYears } from '@/lib/classes'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableBody,
@@ -23,11 +23,14 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
+import { PageHeader } from '@/components/page-header'
+import { Label } from '@/components/ui/label'
+import { selectClass } from '@/components/form-helpers'
+import { EmptyState } from '@/components/empty-state'
+
+export const metadata: Metadata = { title: 'Classes' }
 
 const PAGE_SIZE = 20
-
-const selectClass =
-  'h-9 rounded-lg border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50'
 
 export default async function ClassesPage({
   searchParams,
@@ -57,19 +60,19 @@ export default async function ClassesPage({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Classes</h1>
-          <p className="text-sm text-muted-foreground">{total} class{total === 1 ? '' : 'es'}{year ? '' : activeYear ? ` in ${activeYear.name}` : ''}</p>
-        </div>
-        <Button render={<Link href="/admin/classes/new" />}>
-          <Plus /> Add class
-        </Button>
-      </div>
+    <div className="space-y-6 animate-fade-in">
+      <PageHeader
+        title="Classes"
+        subtitle={`${total} class${total === 1 ? '' : 'es'}${year ? '' : activeYear ? ` in ${activeYear.name}` : ''}`}
+        action={
+          <Button render={<Link href="/admin/classes/new" />}>
+            <Plus /> Add class
+          </Button>
+        }
+      />
 
-      <div className="flex flex-wrap gap-2">
-        <form action="/admin/classes" method="GET" className="flex gap-2">
+      <div className="flex flex-wrap items-end gap-3">
+        <form action="/admin/classes" method="GET" className="flex items-end gap-3">
           {year && <input type="hidden" name="year" value={year} />}
           <div className="relative max-w-sm flex-1">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -78,34 +81,38 @@ export default async function ClassesPage({
               defaultValue={q}
               placeholder="Search by name, section, code or room…"
               className="pl-9"
+              aria-label="Search classes"
             />
           </div>
           <Button type="submit" variant="outline">Search</Button>
         </form>
 
-        <form action="/admin/classes" method="GET" className="flex gap-2">
+        <form action="/admin/classes" method="GET" className="flex items-end gap-3">
           {q && <input type="hidden" name="q" value={q} />}
-          <select name="year" className={selectClass} defaultValue={year}>
-            <option value="">All years</option>
-            {years.map((y) => (
-              <option key={y.id} value={y.id}>
-                {y.name}{y.isActive ? ' (active)' : ''}
-              </option>
-            ))}
-          </select>
+          <div>
+            <Label htmlFor="year">Academic year</Label>
+            <select id="year" name="year" className={selectClass} defaultValue={year}>
+              <option value="">All years</option>
+              {years.map((y) => (
+                <option key={y.id} value={y.id}>
+                  {y.name}{y.isActive ? ' (active)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
           <Button type="submit" variant="outline">Filter</Button>
         </form>
       </div>
 
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader>
-          <CardTitle>Class list</CardTitle>
+          <CardTitle className="text-lg">Class list</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Code</TableHead>
                 <TableHead>Class</TableHead>
                 <TableHead>Section</TableHead>
                 <TableHead>Room</TableHead>
@@ -118,14 +125,17 @@ export default async function ClassesPage({
             <TableBody>
               {classes.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                    No classes found.
+                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                    <EmptyState
+                      icon={BookOpen}
+                      title="No classes found"
+                      description="There are no classes matching your criteria."
+                    />
                   </TableCell>
                 </TableRow>
               )}
               {classes.map((c) => (
-                <TableRow key={c.id}>
-                  <TableCell className="font-mono text-xs">{c.code}</TableCell>
+                <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
                   <TableCell className="font-medium">{c.name}</TableCell>
                   <TableCell>{c.section}</TableCell>
                   <TableCell className="text-xs">{c.room ?? '—'}</TableCell>
@@ -143,6 +153,7 @@ export default async function ClassesPage({
               ))}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 

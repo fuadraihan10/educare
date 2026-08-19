@@ -56,3 +56,6 @@ next-env.d.ts
 
 # vitest scratch storage
 /tests/tmp-storage/
+
+# credentials (never commit)
+LOGINS.txt

@@ -7,6 +7,7 @@ import type { ClassFormState } from '@/lib/classes/actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Field, selectClass } from '@/components/form-helpers'
 
 export type ClassFormInitial = {
   name: string
@@ -16,18 +17,6 @@ export type ClassFormInitial = {
   academicYearId: string
   classTeacherId: string | null
 }
-
-function Field({ error, children }: { error?: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-1">
-      {children}
-      {error && <p className="text-xs text-destructive">{error}</p>}
-    </div>
-  )
-}
-
-const selectClass =
-  'h-9 rounded-lg border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50'
 
 export function ClassForm({
   action,
@@ -46,15 +35,15 @@ export function ClassForm({
   const errors = state.errors ?? {}
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} className="space-y-6 animate-fade-in">
       {state.message && state.status === 'error' && (
-        <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {state.message}
         </p>
       )}
 
       <section className="space-y-4">
-        <h2 className="text-sm font-semibold text-muted-foreground">Class details</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Class details</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field error={errors.name}>
             <Label htmlFor="name">Class name *</Label>
