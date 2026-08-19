@@ -1,7 +1,7 @@
 'use server'
 
 import { createHash, randomInt } from 'crypto'
-import { hash, compare } from 'bcryptjs'
+import { hash } from 'bcryptjs'
 import { z } from 'zod'
 
 import { prisma } from '@/lib/db'

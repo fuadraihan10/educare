@@ -7,7 +7,6 @@ import { requirePage } from '@/lib/permissions'
 import { getStudentsByClass } from '@/lib/classes'
 import { PageHeader } from '@/components/page-header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination'
 import { EmptyState } from '@/components/empty-state'
 

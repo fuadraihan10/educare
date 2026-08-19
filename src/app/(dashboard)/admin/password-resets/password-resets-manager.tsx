@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Loader2, Key, XCircle, Clock, User, Hash, Copy, CheckCircle, Shield, RefreshCw } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,13 +28,21 @@ export function PasswordResetsManager() {
   const [generatedPin, setGeneratedPin] = useState<{ requestId: string; pin: string; expiresAt: Date } | null>(null)
   const [copied, setCopied] = useState(false)
 
-  const fetchRequests = useCallback(async () => {
-    const { requests: data } = await listPasswordResetRequests()
-    setRequests(data as ResetRequest[])
-    setLoading(false)
+  useEffect(() => {
+    let active = true
+    listPasswordResetRequests().then(({ requests: data }) => {
+      if (active) {
+        setRequests(data as ResetRequest[])
+        setLoading(false)
+      }
+    })
+    return () => { active = false }
   }, [])
 
-  useEffect(() => { fetchRequests() }, [fetchRequests])
+  async function refreshRequests() {
+    const { requests: data } = await listPasswordResetRequests()
+    setRequests(data as ResetRequest[])
+  }
 
   async function handleGenerate(requestId: string) {
     setGeneratingId(requestId)
@@ -42,7 +50,7 @@ export function PasswordResetsManager() {
     const result = await generateResetPin(requestId)
     if (result.success && result.pin) {
       setGeneratedPin({ requestId, pin: result.pin, expiresAt: result.expiresAt! })
-      fetchRequests()
+      refreshRequests()
     }
     setGeneratingId(null)
   }
@@ -50,7 +58,7 @@ export function PasswordResetsManager() {
   async function handleReject(requestId: string) {
     setRejectingId(requestId)
     await rejectResetRequest(requestId)
-    fetchRequests()
+    refreshRequests()
     setRejectingId(null)
   }
 
@@ -116,7 +124,7 @@ export function PasswordResetsManager() {
         <p className="text-sm text-muted-foreground">
           {pendingCount} pending request{pendingCount === 1 ? '' : 's'}
         </p>
-        <Button variant="outline" size="sm" onClick={() => fetchRequests()}>
+        <Button variant="outline" size="sm" onClick={() => refreshRequests()}>
           <RefreshCw className="size-3 mr-1" /> Refresh
         </Button>
       </div>
