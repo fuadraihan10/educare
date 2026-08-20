@@ -7,6 +7,7 @@ import { requirePage } from '@/lib/permissions'
 import { getTeacher } from '@/lib/staff'
 import { formatDate } from '@/lib/format'
 import { StaffStatusButton } from '@/components/staff/staff-status-button'
+import { AdminPasswordReset } from '@/components/users/admin-password-reset'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -146,6 +147,11 @@ export default async function StaffDetailPage({
                 )}
               </dd>
             </div>
+            {teacher.user && (
+              <div className="pt-2 border-t border-border/30">
+                <AdminPasswordReset userId={teacher.user.id} userName={teacher.name} />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

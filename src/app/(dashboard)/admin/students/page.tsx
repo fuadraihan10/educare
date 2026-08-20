@@ -4,9 +4,11 @@ import { Search, UserPlus, GraduationCap } from 'lucide-react'
 
 import { requirePage } from '@/lib/permissions'
 import { listStudents, fullName } from '@/lib/students'
+import { listClasses } from '@/lib/classes'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { userStatusVariant } from '@/lib/status-variants'
 import {
@@ -28,6 +30,7 @@ import {
 import { StudentPhoto } from '@/components/students/student-photo'
 import { PageHeader } from '@/components/page-header'
 import { EmptyState } from '@/components/empty-state'
+import { selectClass } from '@/components/form-helpers'
 
 export const metadata: Metadata = { title: 'Students' }
 
@@ -36,19 +39,28 @@ const PAGE_SIZE = 20
 export default async function StudentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string }>
+  searchParams: Promise<{ page?: string; q?: string; status?: string; gender?: string; classId?: string }>
 }) {
   await requirePage('SUPER_ADMIN', 'ADMIN')
   const params = await searchParams
   const q = typeof params.q === 'string' ? params.q : ''
   const page = Math.max(1, Number(params.page) || 1)
+  const status = typeof params.status === 'string' ? params.status : ''
+  const gender = typeof params.gender === 'string' ? params.gender : ''
+  const classId = typeof params.classId === 'string' ? params.classId : ''
 
-  const { students, total } = await listStudents({ q, page, pageSize: PAGE_SIZE })
+  const [{ students, total }, { classes }] = await Promise.all([
+    listStudents({ q, page, pageSize: PAGE_SIZE, status: status || undefined, gender: gender || undefined, classId: classId || undefined }),
+    listClasses({ pageSize: 200 }),
+  ])
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   function href(p: number) {
     const sp = new URLSearchParams()
     if (q) sp.set('q', q)
+    if (status) sp.set('status', status)
+    if (gender) sp.set('gender', gender)
+    if (classId) sp.set('classId', classId)
     if (p > 1) sp.set('page', String(p))
     const qs = sp.toString()
     return `/admin/students${qs ? `?${qs}` : ''}`
@@ -66,19 +78,56 @@ export default async function StudentsPage({
         }
       />
 
-      <form action="/admin/students" method="GET" className="flex flex-wrap items-end gap-3">
-        <div className="relative max-w-sm flex-1">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            name="q"
-            defaultValue={q}
-            placeholder="Search by name or admission no…"
-            className="pl-9 glass-input rounded-xl"
-            aria-label="Search students"
-          />
-        </div>
-        <Button type="submit" variant="outline">Search</Button>
-      </form>
+      <div className="flex flex-wrap items-end gap-3">
+        <form action="/admin/students" method="GET" className="flex items-end gap-3">
+          {status && <input type="hidden" name="status" value={status} />}
+          {gender && <input type="hidden" name="gender" value={gender} />}
+          {classId && <input type="hidden" name="classId" value={classId} />}
+          <div className="relative max-w-sm flex-1">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              name="q"
+              defaultValue={q}
+              placeholder="Search by name or admission no…"
+              className="pl-9 glass-input rounded-xl"
+              aria-label="Search students"
+            />
+          </div>
+          <Button type="submit" variant="outline">Search</Button>
+        </form>
+        <form action="/admin/students" method="GET" className="flex flex-wrap items-end gap-3">
+          {q && <input type="hidden" name="q" value={q} />}
+          <div>
+            <Label htmlFor="stu-status">Status</Label>
+            <select id="stu-status" name="status" className={selectClass} defaultValue={status}>
+              <option value="">All statuses</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+              <option value="GRADUATED">Graduated</option>
+              <option value="WITHDRAWN">Withdrawn</option>
+            </select>
+          </div>
+          <div>
+            <Label htmlFor="stu-gender">Gender</Label>
+            <select id="stu-gender" name="gender" className={selectClass} defaultValue={gender}>
+              <option value="">All genders</option>
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+          <div>
+            <Label htmlFor="stu-class">Class</Label>
+            <select id="stu-class" name="classId" className={selectClass} defaultValue={classId}>
+              <option value="">All classes</option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>{c.name} · Section {c.section}</option>
+              ))}
+            </select>
+          </div>
+          <Button type="submit" variant="outline">Filter</Button>
+        </form>
+      </div>
 
       <Card className="overflow-hidden">
         <CardHeader>

@@ -47,6 +47,7 @@ const studentSchema = z.object({
   guardianPhone: z.string().trim().min(1, 'Guardian phone is required.'),
   guardianEmail: optionalEmail,
   classId: optionalString,
+  rollNo: z.coerce.number().int().min(0).optional().nullable(),
 })
 
 type StudentValues = z.infer<typeof studentSchema>
@@ -72,12 +73,13 @@ function message(_e: unknown): string {
   return 'Something went wrong.'
 }
 
-async function assignClass(tx: Prisma.TransactionClient, classId: string | undefined, studentId: string) {
+async function assignClass(tx: Prisma.TransactionClient, classId: string | undefined, studentId: string, rollNoOverride?: number | null) {
   if (!classId) return {}
   const cls = await tx.class.findUnique({ where: { id: classId }, select: { academicYearId: true } })
   if (!cls) throw new Error('Selected class does not exist.')
-  const agg = await tx.student.aggregate({ where: { classId }, _max: { rollNo: true } })
-  const rollNo = (agg._max.rollNo ?? 0) + 1
+  const rollNo = rollNoOverride != null
+    ? rollNoOverride
+    : ((await tx.student.aggregate({ where: { classId }, _max: { rollNo: true } }))._max.rollNo ?? 0) + 1
   await tx.enrollment.create({
     data: { studentId, classId, academicYearId: cls.academicYearId, status: 'ACTIVE' },
   })
@@ -87,7 +89,7 @@ async function assignClass(tx: Prisma.TransactionClient, classId: string | undef
 async function readPhoto(formData: FormData) {
   const photo = formData.get('photo')
   if (!(photo instanceof File) || photo.size === 0) return null
-  if (photo.size > MAX_IMAGE_SIZE) throw new Error('Photo exceeds maximum size of 5MB.')
+  if (photo.size > MAX_IMAGE_SIZE) throw new StorageError('Photo exceeds maximum size of 5MB.')
   const saved = await saveFile({
     data: Buffer.from(await photo.arrayBuffer()),
     mimeType: photo.type,
@@ -140,7 +142,7 @@ async function createStudentWithAdmission(yearNumber: number, values: StudentVal
             },
           })
         }
-        const placement = await assignClass(tx, values.classId, student.id)
+        const placement = await assignClass(tx, values.classId, student.id, values.rollNo)
         if (placement.classId) {
           await tx.student.update({
             where: { id: student.id },
@@ -189,9 +191,9 @@ export async function createStudent(_prev: StudentFormState, formData: FormData)
   const year = await currentAcademicYear()
   const yearNumber = year ? Number(year.name.split('-')[0]) : new Date().getUTCFullYear()
 
-  const photo = await readPhoto(formData)
-
+  let photo: Awaited<ReturnType<typeof readPhoto>> = null
   try {
+    photo = await readPhoto(formData)
     const { id, admissionNo, regNo } = await createStudentWithAdmission(yearNumber, parsed.data, actor.id, photo)
     await auditLog({
       actorId: actor.id,
@@ -221,9 +223,13 @@ export async function updateStudent(id: string, _prev: StudentFormState, formDat
   if (!parsed.success) return { status: 'error', message: 'Please fix the highlighted fields.', errors: fieldErrors(parsed.error) }
 
   const values = parsed.data
-  const photo = await readPhoto(formData)
+  let photo: Awaited<ReturnType<typeof readPhoto>> = null
+  let oldPhotoStorageKey: string | null = null
 
   try {
+    photo = await readPhoto(formData)
+    if (photo && existing.photoUrl) oldPhotoStorageKey = existing.photoUrl
+
     await prisma.$transaction(async (tx) => {
       await tx.student.update({
         where: { id },
@@ -262,26 +268,31 @@ export async function updateStudent(id: string, _prev: StudentFormState, formDat
         })
       }
       const changed = values.classId !== (existing.classId ?? '')
-      if (changed) {
+      const rollNoChanged = values.rollNo != null && values.rollNo !== existing.rollNo
+      if (changed || rollNoChanged) {
         const cls = values.classId
           ? await tx.class.findUnique({ where: { id: values.classId }, select: { id: true, academicYearId: true } })
           : null
         if (!cls && values.classId) throw new Error('Selected class does not exist.')
-        const rollNo = cls
-          ? ((await tx.student.aggregate({ where: { classId: cls.id }, _max: { rollNo: true } }))._max.rollNo ?? 0) + 1
-          : null
+        const rollNo = values.rollNo != null
+          ? values.rollNo
+          : cls
+            ? ((await tx.student.aggregate({ where: { classId: cls.id }, _max: { rollNo: true } }))._max.rollNo ?? 0) + 1
+            : null
 
         // Deactivate old enrollment for the active academic year
-        const activeYear = await tx.academicYear.findFirst({ where: { isActive: true }, select: { id: true } })
-        if (activeYear) {
-          await tx.enrollment.updateMany({
-            where: { studentId: id, academicYearId: activeYear.id, status: 'ACTIVE' },
-            data: { status: 'COMPLETED' },
-          })
+        if (changed) {
+          const activeYear = await tx.academicYear.findFirst({ where: { isActive: true }, select: { id: true } })
+          if (activeYear) {
+            await tx.enrollment.updateMany({
+              where: { studentId: id, academicYearId: activeYear.id, status: 'ACTIVE' },
+              data: { status: 'COMPLETED' },
+            })
+          }
         }
 
         await tx.student.update({ where: { id }, data: { classId: values.classId || null, rollNo } })
-        if (cls) {
+        if (cls && changed) {
           await tx.enrollment.upsert({
             where: { studentId_academicYearId_classId: { studentId: id, academicYearId: cls.academicYearId, classId: cls.id } },
             create: { studentId: id, classId: cls.id, academicYearId: cls.academicYearId, status: 'ACTIVE' },
@@ -300,6 +311,7 @@ export async function updateStudent(id: string, _prev: StudentFormState, formDat
     })
     revalidatePath('/admin/students')
     revalidatePath(`/admin/students/${id}`)
+    if (oldPhotoStorageKey) await deleteFile(oldPhotoStorageKey).catch(() => {})
     redirect(`/admin/students/${id}`)
   } catch (e) {
     if (photo) await deleteFile(photo.storageKey).catch(() => {})

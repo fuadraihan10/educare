@@ -91,19 +91,39 @@ export async function listStudents(input: {
   q?: string
   page?: number
   pageSize?: number
+  status?: string
+  gender?: string
+  classId?: string
 }): Promise<{ students: StudentWithClass[]; total: number }> {
   const q = input.q?.trim()
   const page = Math.max(1, input.page ?? 1)
   const pageSize = Math.min(100, Math.max(1, input.pageSize ?? 20))
 
-  const where = q
-    ? {
-        OR: [
-          { firstName: { contains: q, mode: 'insensitive' as const } },
-          { lastName: { contains: q, mode: 'insensitive' as const } },
-          { admissionNo: { contains: q, mode: 'insensitive' as const } },
-        ],
-      }
+  const conditions: Record<string, unknown>[] = []
+
+  if (q) {
+    conditions.push({
+      OR: [
+        { firstName: { contains: q, mode: 'insensitive' as const } },
+        { lastName: { contains: q, mode: 'insensitive' as const } },
+        { admissionNo: { contains: q, mode: 'insensitive' as const } },
+      ],
+    })
+  }
+  if (input.status) {
+    conditions.push({ status: input.status })
+  }
+  if (input.gender) {
+    conditions.push({ gender: input.gender })
+  }
+  if (input.classId) {
+    conditions.push({ classId: input.classId })
+  }
+
+  const where = conditions.length > 0
+    ? conditions.length === 1
+      ? conditions[0]
+      : { AND: conditions }
     : undefined
 
   const [students, total] = await prisma.$transaction([
@@ -124,6 +144,7 @@ export async function getStudent(id: string) {
   return prisma.student.findUnique({
     where: { id },
     include: {
+      user: { select: { id: true, email: true, regNo: true, status: true } },
       class: { select: { id: true, name: true, section: true } },
       files: {
         orderBy: { createdAt: 'desc' },

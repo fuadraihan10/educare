@@ -55,7 +55,7 @@ export default async function ProfilePage() {
   const [student, teacher] = await Promise.all([
     user.role === 'STUDENT' ? prisma.student.findUnique({
       where: { userId: user.id },
-      select: { admissionNo: true, class: { select: { name: true, section: true } } },
+      select: { admissionNo: true, rollNo: true, phone: true, class: { select: { name: true, section: true } } },
     }) : null,
     user.role === 'TEACHER' ? prisma.teacher.findUnique({
       where: { userId: user.id },
@@ -94,7 +94,7 @@ export default async function ProfilePage() {
             </div>
           </div>
           <div className="p-4 space-y-2 text-sm">
-            {user.phone && (
+            {user.phone && !student && (
               <div className="flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground">
                 <Phone className="size-4" />
                 <span>{user.phone}</span>
@@ -103,7 +103,13 @@ export default async function ProfilePage() {
             {student && (
               <div className="flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground">
                 <GraduationCap className="size-4" />
-                <span>{student.class?.name} {student.class?.section} · #{student.admissionNo}</span>
+                <span>{student.class?.name} · Section {student.class?.section}{student.rollNo ? ` · Roll ${student.rollNo}` : ''}</span>
+              </div>
+            )}
+            {student && (
+              <div className="flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground">
+                <Phone className="size-4" />
+                <span>{student.phone ?? '—'}</span>
               </div>
             )}
             {teacher && (

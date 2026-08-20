@@ -46,6 +46,8 @@ services:
       redis:
         condition: service_healthy
     restart: unless-stopped
+    volumes:
+      - uploads:/app/storage
     deploy:
       resources:
         limits:
@@ -69,3 +71,4 @@ volumes:
   postgres_data:
   redis_data:
   backups:
+  uploads:

@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   experimental: {
     optimizePackageImports: ['lucide-react', '@tanstack/react-table'],
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
   },
   compress: true,
   images: {

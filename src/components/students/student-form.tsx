@@ -32,6 +32,7 @@ export type StudentFormInitial = {
   guardianPhone: string
   guardianEmail: string | null
   classId: string | null
+  rollNo: number | null
   photoUrl: string | null
 }
 
@@ -140,6 +141,10 @@ export function StudentForm({
                 </option>
               ))}
             </select>
+          </Field>
+          <Field error={errors.rollNo}>
+            <Label htmlFor="rollNo">Roll number</Label>
+            <Input id="rollNo" name="rollNo" type="number" min={0} defaultValue={initial?.rollNo ?? ''} placeholder="Leave empty to auto-assign" />
           </Field>
           <Field error={errors.photo}>
             <Label htmlFor="photo">Photo</Label>

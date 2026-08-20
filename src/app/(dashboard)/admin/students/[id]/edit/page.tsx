@@ -49,6 +49,7 @@ export default async function EditStudentPage({
     guardianPhone: student.guardianPhone,
     guardianEmail: student.guardianEmail,
     classId: student.classId,
+    rollNo: student.rollNo,
     photoUrl: student.photoUrl,
   }
 

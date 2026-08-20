@@ -16,6 +16,7 @@ import {
   GraduationCap,
   KeyRound,
   MonitorDot,
+  Shield,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -50,6 +51,7 @@ export const navByRole: Record<string, RoleNav> = {
         items: [
           { label: 'Students', href: '/admin/students', icon: Users, description: 'Manage student records and profiles' },
           { label: 'Staff', href: '/admin/staff', icon: UserRound, description: 'Manage teachers and staff members' },
+          { label: 'Users', href: '/admin/users', icon: Shield, description: 'Manage all user accounts and passwords' },
           { label: 'Classes', href: '/admin/classes', icon: School, description: 'Organize classes and sections' },
         ],
       },
@@ -100,6 +102,7 @@ export const navByRole: Record<string, RoleNav> = {
         items: [
           { label: 'Students', href: '/admin/students', icon: Users, description: 'Manage student records and profiles' },
           { label: 'Staff', href: '/admin/staff', icon: UserRound, description: 'Manage teachers and staff members' },
+          { label: 'Users', href: '/admin/users', icon: Shield, description: 'Manage all user accounts and passwords' },
           { label: 'Classes', href: '/admin/classes', icon: School, description: 'Organize classes and sections' },
         ],
       },

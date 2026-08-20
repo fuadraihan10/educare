@@ -7,6 +7,7 @@ import { requirePage } from '@/lib/permissions'
 import { getStudent } from '@/lib/students'
 import { deleteStudentFile } from '@/lib/students/actions'
 import { fullName, formatDate, formatSize } from '@/lib/format'
+import { AdminPasswordReset } from '@/components/users/admin-password-reset'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -33,13 +34,15 @@ export default async function StudentDetailPage({
   const isActive = student.status === 'ACTIVE'
 
   const info: [string, string][] = [
+    ['Class', student.class ? `${student.class.name} · Section ${student.class.section}` : '—'],
+    ['Roll number', student.rollNo != null ? String(student.rollNo) : '—'],
+    ['Phone', student.phone ?? '—'],
+    ['Email', student.email ?? '—'],
     ['Date of birth', formatDate(student.dob)],
     ['Gender', student.gender.toLowerCase()],
     ['Blood group', student.bloodGroup ?? '—'],
     ['Religion', student.religion ?? '—'],
     ['Nationality', student.nationality ?? '—'],
-    ['Phone', student.phone ?? '—'],
-    ['Email', student.email ?? '—'],
     ['Address', [student.address, student.city].filter(Boolean).join(', ') || '—'],
     ['Admission date', formatDate(student.admissionDate)],
   ]
@@ -99,7 +102,7 @@ export default async function StudentDetailPage({
         </TabsList>
 
         <TabsContent value="profile">
-          <div className="pt-4">
+          <div className="pt-4 space-y-4">
             <div className="glass-card rounded-2xl overflow-hidden border border-border/50 p-6">
               <h3 className="text-sm font-semibold text-foreground mb-4">Personal Information</h3>
               <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
@@ -110,6 +113,35 @@ export default async function StudentDetailPage({
                   </div>
                 ))}
               </dl>
+            </div>
+
+            <div className="glass-card rounded-2xl overflow-hidden border border-border/50 p-6">
+              <h3 className="text-sm font-semibold text-foreground mb-4">Login Account</h3>
+              {student.user ? (
+                <div className="space-y-3">
+                  <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+                    <div>
+                      <dt className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Registration No</dt>
+                      <dd className="text-sm font-medium mt-0.5 font-mono">{student.user.regNo}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Email</dt>
+                      <dd className="text-sm font-medium mt-0.5">{student.user.email}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Status</dt>
+                      <dd className="mt-0.5">
+                        <Badge variant={student.user.status === 'ACTIVE' ? 'default' : 'secondary'} className="text-xs">{student.user.status}</Badge>
+                      </dd>
+                    </div>
+                  </dl>
+                  <div className="pt-2 border-t border-border/30">
+                    <AdminPasswordReset userId={student.user.id} userName={name} />
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No login account linked.</p>
+              )}
             </div>
           </div>
         </TabsContent>

@@ -95,13 +95,14 @@ export async function submitApplication(_prev: AdmissionFormState, formData: For
   }
 }
 
-function assignClassRollNo(tx: Prisma.TransactionClient, classId: string) {
+function assignClassRollNo(tx: Prisma.TransactionClient, classId: string, rollNoOverride?: number | null) {
+  if (rollNoOverride != null) return Promise.resolve(rollNoOverride)
   return tx.student.aggregate({ where: { classId }, _max: { rollNo: true } }).then((agg) => (agg._max.rollNo ?? 0) + 1)
 }
 
 export type AdmissionApprovalState = { status: string; message?: string; tempPassword?: string }
 
-export async function approveApplication(id: string, _prev: AdmissionApprovalState, _formData: FormData): Promise<AdmissionApprovalState> {
+export async function approveApplication(id: string, _prev: AdmissionApprovalState, formData: FormData): Promise<AdmissionApprovalState> {
   const actor = await requireRole('SUPER_ADMIN', 'ADMIN')
   const app = await prisma.admissionApplication.findUnique({ where: { id }, select: { id: true, status: true, applicantName: true, dob: true, gender: true, phone: true, email: true, address: true, guardianName: true, guardianRelation: true, guardianPhone: true, guardianEmail: true, appliedClassId: true, academicYearId: true } })
   if (!app) return { status: 'error', message: 'Application not found.' }
@@ -111,8 +112,23 @@ export async function approveApplication(id: string, _prev: AdmissionApprovalSta
   const yearNumber = yearName ? Number(yearName.split('-')[0]) : new Date().getUTCFullYear()
 
   const { hash } = await import('bcryptjs')
-  const { generateTempPassword } = await import('@/lib/password')
-  const tempPassword = generateTempPassword()
+  const { generateTempPassword, validatePasswordStrength } = await import('@/lib/password')
+
+  const customPassword = formData.get('password') as string | null
+  const rollNoRaw = formData.get('rollNo') as string | null
+  const rollNoOverride = rollNoRaw && rollNoRaw.trim() !== '' ? Number(rollNoRaw) : null
+  let tempPassword: string
+
+  if (customPassword && customPassword.trim().length > 0) {
+    const validation = validatePasswordStrength(customPassword.trim())
+    if (!validation.valid) {
+      return { status: 'error', message: validation.errors[0] }
+    }
+    tempPassword = customPassword.trim()
+  } else {
+    tempPassword = generateTempPassword()
+  }
+
   const passwordHash = await hash(tempPassword, 12)
   let studentId: string | null = null
 
@@ -139,7 +155,7 @@ export async function approveApplication(id: string, _prev: AdmissionApprovalSta
           select: { id: true },
         })
 
-        const rollNo = await assignClassRollNo(tx, app.appliedClassId)
+        const rollNo = await assignClassRollNo(tx, app.appliedClassId, rollNoOverride)
         await tx.student.update({ where: { id: student.id }, data: { classId: app.appliedClassId, rollNo } })
 
         await tx.enrollment.create({
