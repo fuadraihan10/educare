@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  serverExternalPackages: ['@vercel/blob'],
   experimental: {
     optimizePackageImports: ['lucide-react', '@tanstack/react-table'],
     serverActions: {
