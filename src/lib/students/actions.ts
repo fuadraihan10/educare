@@ -391,6 +391,47 @@ export async function uploadStudentFile(studentId: string, _prev: StudentFormSta
   }
 }
 
+export async function deleteStudent(id: string): Promise<void> {
+  const actor = await requireRole('SUPER_ADMIN', 'ADMIN')
+  const student = await prisma.student.findUnique({
+    where: { id },
+    select: { id: true, admissionNo: true, userId: true, photoUrl: true, files: { select: { storageKey: true } } },
+  })
+  if (!student) return
+
+  await prisma.$transaction(async (tx) => {
+    await tx.enrollment.deleteMany({ where: { studentId: id } })
+    await tx.studentGuardian.deleteMany({ where: { studentId: id } })
+    await tx.attendance.deleteMany({ where: { studentId: id } })
+    await tx.mark.deleteMany({ where: { studentId: id } })
+    await tx.invoiceItem.deleteMany({ where: { invoice: { studentId: id } } })
+    await tx.payment.deleteMany({ where: { invoice: { studentId: id } } })
+    await tx.invoice.deleteMany({ where: { studentId: id } })
+    await tx.admissionApplication.updateMany({ where: { studentId: id }, data: { studentId: null } })
+    await tx.studentFile.deleteMany({ where: { studentId: id } })
+    await tx.student.delete({ where: { id } })
+    if (student.userId) {
+      await tx.user.delete({ where: { id: student.userId } })
+    }
+  })
+
+  for (const file of student.files) {
+    await deleteFile(file.storageKey).catch(() => {})
+  }
+  if (student.photoUrl) {
+    await deleteFile(student.photoUrl).catch(() => {})
+  }
+
+  await auditLog({
+    actorId: actor.id,
+    action: 'DELETE',
+    entity: 'Student',
+    entityId: id,
+    details: { admissionNo: student.admissionNo },
+  })
+  revalidatePath('/admin/students')
+}
+
 export async function deleteStudentFile(fileId: string): Promise<void> {
   const actor = await requireRole('SUPER_ADMIN', 'ADMIN')
   const file = await prisma.studentFile.findUnique({ where: { id: fileId } })

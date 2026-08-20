@@ -15,6 +15,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { StudentPhoto } from '@/components/students/student-photo'
 import { DocumentUpload } from '@/components/students/document-upload'
 import { DeactivateButton } from '@/components/students/deactivate-button'
+import { DeleteButton } from '@/components/students/delete-button'
 import { PageHeader } from '@/components/page-header'
 
 export const metadata: Metadata = { title: 'Student Profile' }
@@ -79,6 +80,7 @@ export default async function StudentDetailPage({
           <FileBadge /> ID Card
         </Button>
         <DeactivateButton studentId={id} disabled={!isActive} />
+        <DeleteButton studentId={id} studentName={name} />
       </PageHeader>
 
       <div className="flex items-start gap-4">
