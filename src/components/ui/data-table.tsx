@@ -6,6 +6,10 @@ import {
   type PaginationState,
   type SortingState,
   type ColumnFiltersState,
+  type HeaderGroup,
+  type Header,
+  type Row,
+  type Cell,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
@@ -127,9 +131,9 @@ function DataTable<TData>({
 
       <Table>
         <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
+          {table.getHeaderGroups().map((headerGroup: HeaderGroup<TData>) => (
             <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
+              {headerGroup.headers.map((header: Header<TData, unknown>) => (
                 <TableHead key={header.id}>
                   {header.isPlaceholder
                     ? null
@@ -141,9 +145,9 @@ function DataTable<TData>({
         </TableHeader>
         <TableBody>
           {table.getRowModel().rows?.length ? (
-            table.getRowModel().rows.map((row) => (
+            table.getRowModel().rows.map((row: Row<TData>) => (
               <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
-                {row.getVisibleCells().map((cell) => (
+                {row.getVisibleCells().map((cell: Cell<TData, unknown>) => (
                   <TableCell key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>

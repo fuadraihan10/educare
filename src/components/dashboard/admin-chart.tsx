@@ -54,7 +54,7 @@ export function AdminChart({ attendanceRate, feeCollectionRate }: AdminChartProp
             axisLine={false}
             tickLine={false}
             domain={[0, 100]}
-            tickFormatter={(v) => `${v}%`}
+            tickFormatter={(v: number) => `${v}%`}
           />
           <Tooltip
             contentStyle={{
@@ -63,7 +63,8 @@ export function AdminChart({ attendanceRate, feeCollectionRate }: AdminChartProp
               borderRadius: '8px',
               fontSize: '12px',
             }}
-            formatter={(value, name) => [`${value}%`, name === 'attendance' ? 'Attendance' : 'Fees Collected']}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            formatter={(value: any, name: any) => [`${value}%`, name === 'attendance' ? 'Attendance' : 'Fees Collected']}
           />
           <Area
             type="monotone"
