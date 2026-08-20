@@ -203,19 +203,19 @@ export async function submitPayment(invoiceId: string, _prev: PaymentFormState, 
 
 export async function confirmPayment(paymentId: string, _prev: PaymentFormState, _formData: FormData): Promise<PaymentFormState> {
   const actor = await requireRole('SUPER_ADMIN', 'ADMIN')
-  const payment = await prisma.payment.findUnique({ where: { id: paymentId }, select: { id: true, invoiceId: true, status: true } })
+  const payment = await prisma.payment.findUnique({ where: { id: paymentId }, select: { id: true, invoiceId: true, status: true, amount: true } })
   if (!payment) return { status: 'error', message: 'Payment not found.' }
   if (payment.status !== 'PENDING') return { status: 'error', message: 'Payment is not pending.' }
 
   await prisma.$transaction(async (tx) => {
     await tx.payment.update({ where: { id: paymentId }, data: { status: 'CONFIRMED', confirmedById: actor.id, confirmedAt: new Date() } })
 
-    const confirmed = await tx.payment.aggregate({ where: { invoiceId: payment.invoiceId, status: 'CONFIRMED' }, _sum: { amount: true } })
+    const confirmed = await tx.payment.aggregate({ where: { invoiceId: payment.invoiceId, status: 'CONFIRMED', id: { not: paymentId } }, _sum: { amount: true } })
     const invoice = await tx.invoice.findUnique({ where: { id: payment.invoiceId }, select: { totalAmount: true, status: true } })
 
     if (!invoice) return
 
-    const totalConfirmed = Number(confirmed._sum.amount ?? 0)
+    const totalConfirmed = Number(confirmed._sum.amount ?? 0) + Number(payment.amount)
     const totalAmount = Number(invoice.totalAmount)
 
     if (invoice.status === 'PAID') return
