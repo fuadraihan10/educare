@@ -342,22 +342,22 @@ export async function deactivateStudent(id: string): Promise<void> {
 }
 
 export async function uploadStudentFile(studentId: string, _prev: StudentFormState, formData: FormData): Promise<StudentFormState> {
-  const actor = await requireRole('SUPER_ADMIN', 'ADMIN')
-  const student = await prisma.student.findUnique({ where: { id: studentId }, select: { id: true } })
-  if (!student) return { status: 'error', message: 'Student not found.' }
-
-  const file = formData.get('file')
-  if (!(file instanceof File) || file.size === 0) {
-    return { status: 'error', message: 'Choose a file to upload.' }
-  }
-  const categoryRaw = String(formData.get('category') ?? 'DOCUMENT')
-  if (!['PHOTO', 'DOCUMENT', 'ID_CARD', 'OTHER'].includes(categoryRaw)) {
-    return { status: 'error', message: 'Invalid file category.' }
-  }
-
-  if (file.size > MAX_FILE_SIZE) return { status: 'error', message: 'File exceeds maximum size of 10MB.' }
-
   try {
+    const actor = await requireRole('SUPER_ADMIN', 'ADMIN')
+    const student = await prisma.student.findUnique({ where: { id: studentId }, select: { id: true } })
+    if (!student) return { status: 'error', message: 'Student not found.' }
+
+    const file = formData.get('file')
+    if (!(file instanceof File) || file.size === 0) {
+      return { status: 'error', message: 'Choose a file to upload.' }
+    }
+    const categoryRaw = String(formData.get('category') ?? 'DOCUMENT')
+    if (!['PHOTO', 'DOCUMENT', 'ID_CARD', 'OTHER'].includes(categoryRaw)) {
+      return { status: 'error', message: 'Invalid file category.' }
+    }
+
+    if (file.size > MAX_FILE_SIZE) return { status: 'error', message: 'File exceeds maximum size of 10MB.' }
+
     const saved = await saveFile({
       data: Buffer.from(await file.arrayBuffer()),
       mimeType: file.type,

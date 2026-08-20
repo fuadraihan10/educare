@@ -73,6 +73,20 @@ export async function listFeeStructures() {
   return prisma.feeStructure.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } })
 }
 
+export async function getAllFeeStructures() {
+  return prisma.feeStructure.findMany({
+    orderBy: { name: 'asc' },
+    include: { _count: { select: { items: true } } },
+  })
+}
+
+export async function getFeeStructure(id: string) {
+  return prisma.feeStructure.findUnique({
+    where: { id },
+    include: { _count: { select: { items: true } } },
+  })
+}
+
 export async function getStudentInvoices(studentId: string) {
   return prisma.invoice.findMany({
     where: { studentId },

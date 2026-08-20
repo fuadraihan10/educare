@@ -305,6 +305,98 @@ export async function createFeeStructure(_prev: FeeStructureFormState, formData:
   return { status: 'success', message: 'Fee structure created.' }
 }
 
+export async function updateFeeStructure(id: string, _prev: FeeStructureFormState, formData: FormData): Promise<FeeStructureFormState> {
+  const actor = await requireRole('SUPER_ADMIN', 'ADMIN')
+  const existing = await prisma.feeStructure.findUnique({ where: { id }, select: { id: true } })
+  if (!existing) return { status: 'error', message: 'Fee structure not found.' }
+
+  const parsed = feeStructureSchema.safeParse(Object.fromEntries(formData))
+  if (!parsed.success) return { status: 'error', message: 'Please fix the highlighted fields.', errors: fieldErrors(parsed.error) }
+  const v = parsed.data
+
+  await prisma.feeStructure.update({
+    where: { id },
+    data: { name: v.name, description: v.description || null, amount: Number(v.amount) },
+  })
+  await auditLog({ actorId: actor.id, action: 'UPDATE', entity: 'FeeStructure', entityId: id, details: { name: v.name } })
+  revalidatePath('/admin/fees')
+  revalidatePath('/admin/fees/structures')
+  revalidatePath('/admin/fees/structures/' + id)
+  return { status: 'success', message: 'Fee structure updated.' }
+}
+
+export async function deleteFeeStructure(id: string): Promise<void> {
+  const actor = await requireRole('SUPER_ADMIN', 'ADMIN')
+  const existing = await prisma.feeStructure.findUnique({ where: { id }, select: { id: true, name: true, _count: { select: { items: true } } } })
+  if (!existing) return
+
+  if (existing._count.items > 0) {
+    await prisma.feeStructure.update({ where: { id }, data: { isActive: false } })
+    await auditLog({ actorId: actor.id, action: 'DEACTIVATE', entity: 'FeeStructure', entityId: id, details: { name: existing.name, reason: 'Has linked invoices' } })
+  } else {
+    await prisma.feeStructure.delete({ where: { id } })
+    await auditLog({ actorId: actor.id, action: 'DELETE', entity: 'FeeStructure', entityId: id, details: { name: existing.name } })
+  }
+  revalidatePath('/admin/fees')
+  revalidatePath('/admin/fees/structures')
+}
+
+export type InvoiceActionState = {
+  status: 'idle' | 'success' | 'error'
+  message?: string
+}
+
+export async function cancelInvoice(id: string, _prev: InvoiceActionState, _formData: FormData): Promise<InvoiceActionState> {
+  const actor = await requireRole('SUPER_ADMIN', 'ADMIN')
+  const invoice = await prisma.invoice.findUnique({ where: { id }, select: { id: true, status: true, invoiceNo: true, studentId: true } })
+  if (!invoice) return { status: 'error', message: 'Invoice not found.' }
+  if (invoice.status === 'CANCELLED') return { status: 'error', message: 'Invoice is already cancelled.' }
+  if (invoice.status === 'PAID') return { status: 'error', message: 'Cannot cancel a fully paid invoice.' }
+
+  const hasConfirmed = await prisma.payment.findFirst({ where: { invoiceId: id, status: 'CONFIRMED' }, select: { id: true } })
+  if (hasConfirmed) return { status: 'error', message: 'Cannot cancel invoice with confirmed payments. Refund them first.' }
+
+  await prisma.invoice.update({ where: { id }, data: { status: 'CANCELLED' } })
+  await auditLog({ actorId: actor.id, action: 'CANCEL', entity: 'Invoice', entityId: id, details: { invoiceNo: invoice.invoiceNo } })
+
+  const student = await prisma.student.findUnique({ where: { id: invoice.studentId }, select: { userId: true } })
+  if (student?.userId) {
+    await deliverNotification({
+      userId: student.userId,
+      title: 'Invoice Cancelled',
+      body: `Invoice ${invoice.invoiceNo} has been cancelled by the administration.`,
+      type: 'warning',
+      category: 'fees',
+      entity: 'Invoice',
+      entityId: id,
+      link: '/student/fees',
+    })
+  }
+
+  revalidatePath('/admin/fees')
+  revalidatePath(`/admin/fees/${id}`)
+  revalidatePath('/student/fees')
+  return { status: 'success', message: 'Invoice cancelled.' }
+}
+
+export async function deleteInvoice(id: string): Promise<void> {
+  const actor = await requireRole('SUPER_ADMIN', 'ADMIN')
+  const invoice = await prisma.invoice.findUnique({ where: { id }, select: { id: true, invoiceNo: true, status: true } })
+  if (!invoice) return
+
+  const hasPayments = await prisma.payment.findFirst({ where: { invoiceId: id, status: { in: ['PENDING', 'CONFIRMED'] } }, select: { id: true } })
+  if (hasPayments) return
+
+  await prisma.$transaction(async (tx) => {
+    await tx.payment.deleteMany({ where: { invoiceId: id } })
+    await tx.invoiceItem.deleteMany({ where: { invoiceId: id } })
+    await tx.invoice.delete({ where: { id } })
+  })
+
+  await auditLog({ actorId: actor.id, action: 'DELETE', entity: 'Invoice', entityId: id, details: { invoiceNo: invoice.invoiceNo } })
+  revalidatePath('/admin/fees')
+}
+
 export async function markOverdueInvoices(): Promise<number> {
   const today = new Date()
   today.setHours(0, 0, 0, 0)

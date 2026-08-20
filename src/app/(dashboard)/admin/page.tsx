@@ -8,6 +8,7 @@ import { prisma } from '@/lib/db'
 import { StatCard } from '@/components/stat-card'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { formatCurrency } from '@/lib/format'
 
 export const metadata: Metadata = { title: 'Dashboard' }
 
@@ -24,6 +25,35 @@ export default async function AdminDashboard() {
     prisma.admissionApplication.count({ where: { status: 'PENDING' } }),
     prisma.student.count({ where: { createdAt: { gte: startOfMonth } } }),
   ])
+
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+
+  const [
+    totalAttendance,
+    presentAttendance,
+    totalInvoices,
+    paidInvoices,
+    overdueInvoices,
+    totalStudents,
+    recentEnrollments,
+    outstandingAmount,
+  ] = await Promise.all([
+    prisma.attendance.count(),
+    prisma.attendance.count({ where: { status: { in: ['PRESENT', 'LATE'] } } }),
+    prisma.invoice.count(),
+    prisma.invoice.count({ where: { status: 'PAID' } }),
+    prisma.invoice.count({ where: { status: { in: ['ISSUED', 'OVERDUE', 'PARTIAL'] } } }),
+    prisma.student.count(),
+    prisma.enrollment.count({ where: { enrollmentDate: { gte: thirtyDaysAgo } } }),
+    prisma.invoice.aggregate({
+      where: { status: { in: ['ISSUED', 'OVERDUE', 'PARTIAL'] } },
+      _sum: { totalAmount: true },
+    }),
+  ])
+
+  const attendanceRate = totalAttendance > 0 ? Math.round((presentAttendance / totalAttendance) * 100) : 0
+  const feeCollectionRate = totalInvoices > 0 ? Math.round((paidInvoices / totalInvoices) * 100) : 0
+  const activeRate = totalStudents > 0 ? Math.round((studentCount / totalStudents) * 100) : 0
 
   const staggerClasses = ['stagger-1', 'stagger-2', 'stagger-3', 'stagger-4', 'stagger-5', 'stagger-6', 'stagger-7', 'stagger-8']
   const dateSubtitle = dayjs(now).format('dddd, MMMM D')
@@ -66,6 +96,49 @@ export default async function AdminDashboard() {
         <StatCard title="Classes" value={classCount} icon={School} iconColor="bg-emerald-500/10" subtitle="Current year" className="animate-fade-in stagger-3" />
         <StatCard title="Pending admissions" value={applicationCount} icon={ClipboardList} iconColor="bg-amber-500/10" subtitle={applicationCount > 0 ? 'Needs review' : 'All clear'} className="animate-fade-in stagger-4" />
       </div>
+
+      <Card className="overflow-hidden animate-fade-in stagger-5">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-lg">Analytics Overview</CardTitle>
+          <Link href="/admin/analytics" className="text-sm text-primary hover:underline">View all</Link>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">Attendance Rate</p>
+              <p className="text-xl font-bold">{attendanceRate}%</p>
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                <div className="h-full bg-teal-500 rounded-full" style={{ width: `${attendanceRate}%` }} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">Fee Collection</p>
+              <p className="text-xl font-bold">{feeCollectionRate}%</p>
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${feeCollectionRate}%` }} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">Active Students</p>
+              <p className="text-xl font-bold">{activeRate}%</p>
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                <div className="h-full bg-blue-500 rounded-full" style={{ width: `${activeRate}%` }} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">New Enrollments (30d)</p>
+              <p className="text-xl font-bold">{recentEnrollments}</p>
+              <p className="text-xs text-muted-foreground">{overdueInvoices} overdue invoices</p>
+            </div>
+          </div>
+          {Number(outstandingAmount._sum.totalAmount ?? 0) > 0 && (
+            <div className="mt-4 flex items-center justify-between rounded-lg bg-destructive/10 px-3 py-2">
+              <span className="text-sm font-medium text-destructive">Outstanding Fees</span>
+              <span className="text-sm font-bold text-destructive">{formatCurrency(Number(outstandingAmount._sum.totalAmount))}</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card className="overflow-hidden">
         <CardHeader className="text-center">
