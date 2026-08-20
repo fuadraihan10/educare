@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Full reset: drops, recreates, migrates, seeds, then opens Prisma Studio.
+// Full reset: drops, recreates schema from prisma/schema.prisma, seeds, opens Studio.
 // Usage: node scripts/db/reset.mjs
 
 import { execSync } from 'node:child_process'
@@ -35,19 +35,22 @@ const base = { stdio: 'inherit', env: { ...process.env, DATABASE_URL: dbUrl }, c
 console.log('\n══════════════════════════════════════════')
 console.log('  1/3  Resetting database')
 console.log('══════════════════════════════════════════\n')
-execSync('npx prisma migrate reset --force --schema prisma/schema.prisma', base)
+execSync('npx prisma db push --force-reset --schema prisma/schema.prisma', base)
 
 console.log('\n══════════════════════════════════════════')
-console.log('  2/3  Database ready')
-console.log('══════════════════════════════════════════')
-console.log('  migrate + seed completed via prisma migrate reset.\n')
+console.log('  2/3  Seeding database')
+console.log('══════════════════════════════════════════\n')
+execSync('npx tsx prisma/seed.ts', base)
+execSync('npx tsx prisma/seed-students.ts', base)
+execSync('npx tsx prisma/seed-teachers.ts', base)
+execSync('npx tsx prisma/seed-parents.ts', base)
 
-console.log('══════════════════════════════════════════')
+console.log('\n══════════════════════════════════════════')
 console.log('  3/3  Opening Prisma Studio')
 console.log('══════════════════════════════════════════\n')
 
 try {
-  execSync('npx prisma studio --schema prisma/schema.prisma', { ...base, stdio: 'inherit' })
+  execSync('npx prisma studio', { ...base, stdio: 'inherit' })
 } catch {
   // Studio opened in browser; process exits when user closes it
 }

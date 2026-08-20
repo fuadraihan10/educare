@@ -121,11 +121,19 @@ npm run db
 This single command will:
 
 1. **Drop** the existing database
-2. **Re-run** all Prisma migrations from scratch
-3. **Seed** the database with demo data (users, students, teachers, classes, subjects, attendance, exams, fees, announcements, etc.)
+2. **Recreate** the schema from `schema.prisma`
+3. **Seed** all demo data:
+
+| Seed File              | Count | Description                        |
+| ---------------------- | ----- | ---------------------------------- |
+| `seed.ts`              | 4     | Test users, school, classes, fees  |
+| `seed-students.ts`     | 300   | Students across 30 class sections  |
+| `seed-teachers.ts`     | 102   | Teachers with qualifications       |
+| `seed-parents.ts`      | 96    | Parents linked to students         |
+
 4. **Open** Prisma Studio so you can inspect the data
 
-If you only want to re-run the seed script without dropping/migrating (e.g. after adding new seed data):
+If you only want to re-run the seed scripts without dropping/recreating (e.g. after adding new seed data):
 
 ```bash
 npm run db:seed
@@ -139,14 +147,14 @@ npm run db:seed
 
 Login using **Registration Number** and **Password**:
 
-| Role    | Reg No       |
-| ------- | ------------ |
-| Admin   | ADM-0001     |
-| Teacher | TCH-0001     |
-| Student | STU-2026-0001|
-| Parent  | PAR-0001     |
+| Role    | Reg No        | Password      |
+| ------- | ------------- | ------------- |
+| Admin   | ADM-0001      | Admin@12345   |
+| Teacher | TCH-0001      | Teacher@12345 |
+| Student | STU-2026-0001 | Student@12345 |
+| Parent  | PAR-0001      | Parent@12345  |
 
-passwards are private .. dm me for passwards
+> All 300 students, 102 teachers, and 96 parents use the same pattern: `Student@12345`, `Teacher@12345`, `Parent@12345` respectively.
 
 ---
 
