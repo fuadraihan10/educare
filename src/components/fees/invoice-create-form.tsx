@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Field, selectClass } from '@/components/form-helpers'
+import { formatCurrency } from '@/lib/format'
 
 export function InvoiceCreateForm({
   action, submitLabel, students, terms, feeStructures,
@@ -61,14 +62,14 @@ export function InvoiceCreateForm({
             <label key={f.id} className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 px-3 py-2 text-sm transition-colors hover:bg-muted/40">
               <input type="checkbox" checked={selectedFees[f.id] ?? false} onChange={(e) => setSelectedFees((prev) => ({ ...prev, [f.id]: e.target.checked }))} className="size-4 rounded border-input accent-primary" />
               <span className="flex-1">{f.name}</span>
-              <span className="font-medium tabular-nums">{Number(f.amount).toLocaleString()}</span>
+              <span className="font-medium tabular-nums">{formatCurrency(Number(f.amount))}</span>
             </label>
           ))}
         </div>
         <div className="mt-3 flex items-center justify-end rounded-lg bg-muted/30 px-4 py-2.5">
           <span className="text-sm text-muted-foreground">Total:</span>
           <span className="ml-2 text-lg font-semibold tabular-nums">
-            {Number(feeStructures.filter((f) => selectedFees[f.id]).reduce((sum, f) => sum + Number(f.amount), 0)).toLocaleString()}
+            {formatCurrency(Number(feeStructures.filter((f) => selectedFees[f.id]).reduce((sum, f) => sum + Number(f.amount), 0)))}
           </span>
         </div>
       </div>

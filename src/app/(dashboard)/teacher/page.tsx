@@ -4,11 +4,10 @@ import Link from 'next/link'
 import { requirePage } from '@/lib/permissions'
 import { prisma } from '@/lib/db'
 import { StatCard } from '@/components/stat-card'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/empty-state'
-import { Users, CalendarCheck, FileText, BookOpen } from 'lucide-react'
+import { Users, CalendarCheck, FileText, BookOpen, Plus, PenLine } from 'lucide-react'
 
 export const metadata: Metadata = { title: 'Dashboard' }
 
@@ -34,6 +33,7 @@ export default async function TeacherDashboard() {
   const classesTaught = teacher?.assignments ?? []
   const uniqueClasses = [...new Map(classesTaught.map((a) => [a.classId, a])).values()]
   const classIds = [...new Set(classesTaught.map((a) => a.classId))]
+  const allSubjects = [...new Set(classesTaught.map((a) => a.subject.name))]
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -65,58 +65,89 @@ export default async function TeacherDashboard() {
             <span className="text-sm text-muted-foreground">{classesTaught.length} subject(s) across {classIds.length} class(es)</span>
           </div>
         </div>
+        <div className="flex items-center gap-2">
+          <Link href="/teacher/exams/new" className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
+            <Plus className="size-4" /> New Exam
+          </Link>
+          <Link href="/teacher/attendance" className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm font-medium hover:bg-muted/50 transition-colors">
+            <PenLine className="size-4" /> Mark Attendance
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard title="My students" value={studentCount} icon={Users} iconColor="bg-blue-500/10" subtitle="Across all classes" className="animate-fade-in stagger-1" />
-        <StatCard title="Attendance today" value={attendanceToday} icon={CalendarCheck} iconColor="bg-emerald-500/10" subtitle={classIds.length > 0 ? `${classIds.length} class(es)` : 'No classes'} className="animate-fade-in stagger-2" />
-        <StatCard title="Upcoming exams" value={upcomingAssessments} icon={FileText} iconColor="bg-amber-500/10" subtitle={upcomingAssessments > 0 ? 'Scheduled' : 'None scheduled'} className="animate-fade-in stagger-3" />
+        <StatCard title="My Students" value={studentCount} icon={Users} iconColor="bg-blue-500/10" subtitle="Across all classes" className="animate-fade-in stagger-1" />
+        <StatCard title="Attendance Today" value={attendanceToday} icon={CalendarCheck} iconColor="bg-emerald-500/10" subtitle={classIds.length > 0 ? `${classIds.length} class(es)` : 'No classes'} className="animate-fade-in stagger-2" />
+        <StatCard title="Upcoming Exams" value={upcomingAssessments} icon={FileText} iconColor="bg-amber-500/10" subtitle={upcomingAssessments > 0 ? 'Scheduled' : 'None scheduled'} className="animate-fade-in stagger-3" />
       </div>
 
+      {/* My Subjects */}
       <Card className="overflow-hidden">
         <CardHeader>
-          <CardTitle className="text-lg">My classes</CardTitle>
+          <CardTitle className="text-lg">My Subjects</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {uniqueClasses.length === 0 && (
-            <EmptyState
-              icon={BookOpen}
-              title="No classes assigned"
-              description="You don't have any classes assigned yet."
-            />
+        <CardContent>
+          {allSubjects.length === 0 ? (
+            <EmptyState icon={BookOpen} title="No subjects assigned" description="You don't have any subject assignments yet." />
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {allSubjects.map((name) => (
+                <span key={name} className="rounded-xl bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary">
+                  {name}
+                </span>
+              ))}
+            </div>
           )}
-          {uniqueClasses.map((a, i) => {
-            const subjects = classesTaught.filter((x) => x.classId === a.classId)
-            return (
-              <div
-                key={a.classId}
-                className={`group flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl p-4 border border-border/50 transition-all duration-200 animate-fade-in stagger-${i + 1}`}
-              >
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="shrink-0 rounded-xl bg-primary/10 p-3">
-                    <BookOpen className="size-4.5 text-primary" />
-                  </div>
-                  <div className="min-w-0">
-<p className="font-semibold text-foreground">
-  {a.class.name} · Section {a.class.section}
-</p>
-                    <div className="mt-1.5 flex flex-wrap gap-1.5">
-                      {subjects.map((x) => (
-                        <span key={x.id} className="rounded-lg bg-primary/5 px-2 py-0.5 text-xs font-medium text-primary/80">
-                          {x.subject.name}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" className="shrink-0 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[var(--shadow-raised)] hover:border-primary/30 hover:text-primary" render={<Link href="/teacher/attendance" />}>
-                  Mark attendance
-                </Button>
-              </div>
-            )
-          })}
         </CardContent>
       </Card>
+
+      {/* My Classes - Centered */}
+      <div className="flex justify-center">
+        <Card className="overflow-hidden w-full max-w-2xl">
+          <CardHeader className="text-center">
+            <CardTitle className="text-lg">My Classes</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {uniqueClasses.length === 0 && (
+              <EmptyState
+                icon={BookOpen}
+                title="No classes assigned"
+                description="You don't have any classes assigned yet."
+              />
+            )}
+            {uniqueClasses.map((a) => {
+              const subjects = classesTaught.filter((x) => x.classId === a.classId)
+              return (
+                <div
+                  key={a.classId}
+                  className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl p-4 border border-border/50 transition-all duration-200 hover:border-primary/20 hover:bg-muted/20"
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="shrink-0 rounded-xl bg-primary/10 p-3">
+                      <BookOpen className="size-4.5 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-foreground">
+                        {a.class.name} · Section {a.class.section}
+                      </p>
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {subjects.map((x) => (
+                          <span key={x.id} className="rounded-lg bg-primary/5 px-2 py-0.5 text-xs font-medium text-primary/80">
+                            {x.subject.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <Link href="/teacher/attendance" className="shrink-0 inline-flex items-center justify-center rounded-xl border border-border px-3 py-1.5 text-xs font-medium transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-raised)] hover:border-primary/30 hover:text-primary">
+                    Mark attendance
+                  </Link>
+                </div>
+              )
+            })}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

@@ -17,7 +17,7 @@ export default async function SessionsPage() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <PageHeader title="Active Sessions" subtitle="Manage your login sessions across devices">
+      <PageHeader title="Active Sessions" subtitle="See where you're signed in and manage your sessions">
         <Link href="/profile" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="size-4" /> Back
         </Link>

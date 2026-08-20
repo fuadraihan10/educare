@@ -60,6 +60,7 @@
 
   --card:            oklch(1.00 0.000 0);
   --card-foreground: oklch(0.18 0.014 260);
+  --card-spacing:    1.25rem;
 
   --popover:         oklch(1.00 0.000 0);
   --popover-foreground: oklch(0.18 0.014 260);

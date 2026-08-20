@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import {
   User, Shield, Calendar, Clock, Phone,
-  Bell, Palette, Lock, Activity, ChevronRight, Award, GraduationCap
+  Bell, Lock, Activity, ChevronRight, Award, GraduationCap
 } from 'lucide-react'
 
 import { requirePage } from '@/lib/permissions'
@@ -44,7 +44,6 @@ const navItems = [
   { href: '/profile/edit', label: 'Edit Profile', icon: User, description: 'Update your personal information' },
   { href: '/profile/security', label: 'Password & Security', icon: Lock, description: 'Change password and manage security' },
   { href: '/profile/notifications', label: 'Notifications', icon: Bell, description: 'Configure notification preferences' },
-  { href: '/profile/appearance', label: 'Appearance', icon: Palette, description: 'Theme, density, and display settings' },
   { href: '/profile/sessions', label: 'Active Sessions', icon: Clock, description: 'Manage your login sessions' },
   { href: '/profile/activity', label: 'Activity Log', icon: Activity, description: 'View your account activity' },
   { href: '/profile/permissions', label: 'Roles & Permissions', icon: Shield, description: 'Your access level and permissions' },

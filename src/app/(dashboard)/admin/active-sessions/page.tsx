@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db'
 import { PageHeader } from '@/components/page-header'
 import { ActiveSessionsTable } from './active-sessions-table'
 
-export const metadata: Metadata = { title: 'All Active Sessions' }
+export const metadata: Metadata = { title: 'Active Sessions' }
 
 export default async function ActiveSessionsPage() {
   await requirePage('SUPER_ADMIN', 'ADMIN')
@@ -17,18 +17,11 @@ export default async function ActiveSessionsPage() {
     orderBy: { lastActiveAt: 'desc' },
   })
 
-  const usersWithSessions = await prisma.user.findMany({
-    where: { status: 'ACTIVE', sessions: { some: { expiresAt: { gt: new Date() } } } },
-    select: { id: true },
-  })
-
-  const uniqueOnlineUsers = usersWithSessions.length
-
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
-        title="All Active Sessions"
-        subtitle={`${sessions.length} active session${sessions.length !== 1 ? 's' : ''} across ${uniqueOnlineUsers} user${uniqueOnlineUsers !== 1 ? 's' : ''}`}
+        title="Active Sessions"
+        subtitle={`Monitor and manage all user sessions across the system`}
       />
       <ActiveSessionsTable
         sessions={sessions.map((s) => ({

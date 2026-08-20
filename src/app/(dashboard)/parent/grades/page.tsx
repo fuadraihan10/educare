@@ -21,7 +21,21 @@ export default async function ParentGradesPage() {
   const allGrades = await Promise.all(
     links.map(async ({ student }) => {
       const marks = await getStudentGrades(student.id)
-      return { student, marks }
+      const subjectMap = new Map<string, typeof marks>()
+      for (const m of marks) {
+        const key = m.assessment.subject.name
+        if (!subjectMap.has(key)) subjectMap.set(key, [])
+        subjectMap.get(key)!.push(m)
+      }
+      let totalPoints = 0
+      let subjectCount = 0
+      for (const [, subjMarks] of subjectMap) {
+        const avg = subjMarks.reduce((s, m) => s + (m.gradePoint ? Number(m.gradePoint) : 0), 0) / subjMarks.length
+        totalPoints += avg
+        subjectCount++
+      }
+      const gpa = subjectCount > 0 ? totalPoints / subjectCount : 0
+      return { student, marks, gpa }
     }),
   )
 
@@ -31,14 +45,9 @@ export default async function ParentGradesPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard title="Children" value={links.length} icon={Users} iconColor="bg-blue-500/10" subtitle="Linked students" />
-        {allGrades.map(({ student, marks }) => {
-          const totalObtained = marks.reduce((s, m) => s + Number(m.marksObtained), 0)
-          const totalMax = marks.reduce((s, m) => s + Number(m.assessment.maxMarks), 0)
-          const avgPct = totalMax > 0 ? Math.round((totalObtained / totalMax) * 100) : 0
-          return (
-            <StatCard key={student.id} title={`${student.firstName} ${student.lastName}`} value={marks.length} icon={GraduationCap} iconColor="bg-emerald-500/10" subtitle={`${avgPct}% average`} />
-          )
-        })}
+        {allGrades.map(({ student, marks, gpa }) => (
+          <StatCard key={student.id} title={`${student.firstName} ${student.lastName}`} value={`${gpa.toFixed(2)} / 5.00`} icon={GraduationCap} iconColor="bg-emerald-500/10" subtitle={`${marks.length} assessment(s)`} />
+        ))}
       </div>
 
       {allGrades.map(({ student, marks }) => (
@@ -54,7 +63,7 @@ export default async function ParentGradesPage() {
             <div className="glass-card rounded-2xl overflow-hidden">
               <div className="border-b border-border/50 px-6 py-4">
                 <h2 className="text-lg font-semibold tracking-tight">Results</h2>
-                <p className="text-sm text-muted-foreground mt-0.5">{marks.length} assessment{marks.length !== 1 ? 's' : ''}</p>
+                <p className="text-sm text-muted-foreground mt-0.5">{marks.length} assessment(s)</p>
               </div>
               <div className="glass-table overflow-x-auto">
                 <table className="w-full text-sm">
@@ -64,30 +73,23 @@ export default async function ParentGradesPage() {
                       <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground" scope="col">Subject</th>
                       <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground" scope="col">Term</th>
                       <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground" scope="col">Marks</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground" scope="col">Percentage</th>
                       <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground" scope="col">Grade</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground" scope="col">GP</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {marks.map((m) => {
-                      const pct = Math.round((Number(m.marksObtained) / Number(m.assessment.maxMarks)) * 100)
-                      return (
-                        <tr key={m.id} className="border-b border-border/30 last:border-0 hover:bg-muted/40 transition-colors">
-                          <td className="px-6 py-3.5 font-medium">{m.assessment.name}</td>
-                          <td className="px-6 py-3.5">{m.assessment.subject.name}</td>
-                          <td className="px-6 py-3.5 text-xs text-muted-foreground">{m.assessment.term.name}</td>
-                          <td className="px-6 py-3.5">{String(m.marksObtained)} / {String(m.assessment.maxMarks)}</td>
-                          <td className="px-6 py-3.5">
-                            <span className={`font-medium ${pct >= 80 ? 'text-emerald-600 dark:text-emerald-400' : pct >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`}>
-                              {pct}%
-                            </span>
-                          </td>
-                          <td className="px-6 py-3.5">
-                            <Badge variant="secondary" className="font-medium">{m.grade ?? '—'}</Badge>
-                          </td>
-                        </tr>
-                      )
-                    })}
+                    {marks.map((m) => (
+                      <tr key={m.id} className="border-b border-border/30 last:border-0 hover:bg-muted/40 transition-colors">
+                        <td className="px-6 py-3.5 font-medium">{m.assessment.name}</td>
+                        <td className="px-6 py-3.5">{m.assessment.subject.name}</td>
+                        <td className="px-6 py-3.5 text-xs text-muted-foreground">{m.assessment.term.name}</td>
+                        <td className="px-6 py-3.5">{String(m.marksObtained)} / {String(m.assessment.maxMarks)}</td>
+                        <td className="px-6 py-3.5">
+                          <Badge variant={m.grade === 'F' ? 'destructive' : m.grade === 'A+' || m.grade === 'A' ? 'default' : 'secondary'} className="font-medium">{m.grade ?? '—'}</Badge>
+                        </td>
+                        <td className="px-6 py-3.5 font-medium tabular-nums">{m.gradePoint != null ? Number(m.gradePoint).toFixed(1) : '—'}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>

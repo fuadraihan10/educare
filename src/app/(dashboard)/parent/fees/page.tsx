@@ -7,6 +7,7 @@ import dayjs from 'dayjs'
 import { PageHeader } from '@/components/page-header'
 import { EmptyState } from '@/components/empty-state'
 import { StatCard } from '@/components/stat-card'
+import { formatCurrency } from '@/lib/format'
 import { CreditCard, CheckCircle, Clock, AlertCircle, Users } from 'lucide-react'
 
 export const metadata: Metadata = { title: 'Fees' }
@@ -38,9 +39,9 @@ export default async function ParentFeesPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Children" value={links.length} icon={Users} iconColor="bg-blue-500/10" subtitle="Linked students" />
-        <StatCard title="Total Invoiced" value={`₦${totalAmount.toLocaleString()}`} icon={CreditCard} iconColor="bg-violet-500/10" subtitle={`${invoices.length} invoice(s)`} />
-        <StatCard title="Total Paid" value={`₦${totalPaid.toLocaleString()}`} icon={CheckCircle} iconColor="bg-emerald-500/10" subtitle={`${paidCount} paid`} />
-        <StatCard title="Remaining" value={`₦${totalRemaining.toLocaleString()}`} icon={Clock} iconColor="bg-amber-500/10" subtitle={`${pendingCount} pending`} />
+        <StatCard title="Total Invoiced" value={formatCurrency(totalAmount)} icon={CreditCard} iconColor="bg-violet-500/10" subtitle={`${invoices.length} invoice(s)`} />
+        <StatCard title="Total Paid" value={formatCurrency(totalPaid)} icon={CheckCircle} iconColor="bg-emerald-500/10" subtitle={`${paidCount} paid`} />
+        <StatCard title="Remaining" value={formatCurrency(totalRemaining)} icon={Clock} iconColor="bg-amber-500/10" subtitle={`${pendingCount} pending`} />
       </div>
 
       <div className="glass-card rounded-2xl overflow-hidden">
@@ -74,8 +75,8 @@ export default async function ParentFeesPage() {
                     <td className="px-6 py-3.5 font-medium">{inv.student.firstName} {inv.student.lastName}</td>
                     <td className="px-6 py-3.5 font-mono text-xs font-medium">{inv.invoiceNo}</td>
                     <td className="px-6 py-3.5">{inv.term.name}</td>
-                    <td className="px-6 py-3.5 font-medium">₦{Number(inv.totalAmount).toLocaleString()}</td>
-                    <td className="px-6 py-3.5 text-muted-foreground">₦{paid.toLocaleString()}</td>
+                    <td className="px-6 py-3.5 font-medium">{formatCurrency(Number(inv.totalAmount))}</td>
+                    <td className="px-6 py-3.5 text-muted-foreground">{formatCurrency(paid)}</td>
                     <td className="px-6 py-3.5">
                       <Badge variant={feeStatusVariant[inv.status] ?? 'outline'} className="font-medium">{inv.status}</Badge>
                     </td>

@@ -10,16 +10,27 @@ import { Label } from '@/components/ui/label'
 import { Field, selectClass } from '@/components/form-helpers'
 
 export function AssessmentForm({
-  action, submitLabel, classes, subjects, terms,
+  action, submitLabel, classes, subjects, terms, defaultValues,
 }: {
   action: (prev: AssessmentFormState, formData: FormData) => Promise<AssessmentFormState>
   submitLabel: string
   classes: { id: string; name: string; section: string; code: string }[]
   subjects: { id: string; name: string; code: string }[]
   terms: { id: string; name: string; isActive: boolean }[]
+  defaultValues?: {
+    name?: string
+    type?: string
+    classId?: string
+    subjectId?: string
+    termId?: string
+    maxMarks?: number
+    weight?: number
+    date?: string
+  }
 }) {
   const [state, formAction, pending] = useActionState(action, { status: 'idle' })
   const errors = state.errors ?? {}
+  const d = defaultValues
 
   return (
     <form action={formAction} className="space-y-6 animate-fade-in">
@@ -27,11 +38,11 @@ export function AssessmentForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <Field error={errors.name}>
           <Label htmlFor="name">Assessment name *</Label>
-          <Input id="name" name="name" placeholder="e.g. Chapter Quiz 1" required />
+          <Input id="name" name="name" placeholder="e.g. Chapter Quiz 1" defaultValue={d?.name} required />
         </Field>
         <Field error={errors.type}>
           <Label htmlFor="type">Type *</Label>
-          <select id="type" name="type" className={selectClass} defaultValue="QUIZ" required>
+          <select id="type" name="type" className={selectClass} defaultValue={d?.type ?? 'QUIZ'} required>
             <option value="QUIZ">Quiz</option>
             <option value="CLASSWORK">Classwork</option>
             <option value="HOMEWORK">Homework</option>
@@ -42,36 +53,36 @@ export function AssessmentForm({
         </Field>
         <Field error={errors.classId}>
           <Label htmlFor="classId">Class *</Label>
-          <select id="classId" name="classId" className={selectClass} required>
+          <select id="classId" name="classId" className={selectClass} defaultValue={d?.classId} required>
             <option value="" disabled>Select class…</option>
             {classes.map((c) => <option key={c.id} value={c.id}>{c.code} — {c.name} {c.section}</option>)}
           </select>
         </Field>
         <Field error={errors.subjectId}>
           <Label htmlFor="subjectId">Subject *</Label>
-          <select id="subjectId" name="subjectId" className={selectClass} required>
+          <select id="subjectId" name="subjectId" className={selectClass} defaultValue={d?.subjectId} required>
             <option value="" disabled>Select subject…</option>
             {subjects.map((s) => <option key={s.id} value={s.id}>{s.code} — {s.name}</option>)}
           </select>
         </Field>
         <Field error={errors.termId}>
           <Label htmlFor="termId">Term *</Label>
-          <select id="termId" name="termId" className={selectClass} defaultValue={terms.find((t) => t.isActive)?.id || ''} required>
+          <select id="termId" name="termId" className={selectClass} defaultValue={d?.termId || terms.find((t) => t.isActive)?.id || ''} required>
             <option value="" disabled>Select term…</option>
             {terms.map((t) => <option key={t.id} value={t.id}>{t.name}{t.isActive ? ' (active)' : ''}</option>)}
           </select>
         </Field>
         <Field error={errors.maxMarks}>
           <Label htmlFor="maxMarks">Max marks *</Label>
-          <Input id="maxMarks" name="maxMarks" type="number" placeholder="e.g. 100" required />
+          <Input id="maxMarks" name="maxMarks" type="number" step={1} min={1} placeholder="e.g. 100" defaultValue={d?.maxMarks} required />
         </Field>
         <Field error={errors.weight}>
           <Label htmlFor="weight">Weight</Label>
-          <Input id="weight" name="weight" type="number" placeholder="Default: 1" />
+          <Input id="weight" name="weight" type="number" placeholder="Default: 1" defaultValue={d?.weight} />
         </Field>
         <Field error={errors.date}>
           <Label htmlFor="date">Date</Label>
-          <Input id="date" name="date" type="date" />
+          <Input id="date" name="date" type="date" defaultValue={d?.date} />
         </Field>
       </div>
       <div className="flex items-center gap-3">

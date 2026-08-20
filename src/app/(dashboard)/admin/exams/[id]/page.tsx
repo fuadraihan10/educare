@@ -88,6 +88,7 @@ export default async function AssessmentDetailPage({ params }: { params: Promise
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs uppercase tracking-wider" scope="col">Student</th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs uppercase tracking-wider" scope="col">Marks</th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs uppercase tracking-wider" scope="col">Grade</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs uppercase tracking-wider" scope="col">Grade Point</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -96,12 +97,23 @@ export default async function AssessmentDetailPage({ params }: { params: Promise
                       <td className="px-4 py-3 text-muted-foreground">{m.student.rollNo ?? '—'}</td>
                       <td className="px-4 py-3 font-medium">{m.student.firstName} {m.student.lastName}</td>
                       <td className="px-4 py-3">{String(m.marksObtained)} / {String(a.maxMarks)}</td>
-                      <td className="px-4 py-3"><Badge variant="secondary" className="text-xs">{m.grade ?? '—'}</Badge></td>
+                      <td className="px-4 py-3">
+                        <Badge variant={m.grade === 'F' ? 'destructive' : m.grade === 'A+' || m.grade === 'A' ? 'default' : 'secondary'} className="text-xs">{m.grade ?? '—'}</Badge>
+                      </td>
+                      <td className="px-4 py-3 font-medium tabular-nums">{m.gradePoint != null ? Number(m.gradePoint).toFixed(1) : '—'}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+            {a.marks.length > 1 && (
+              <div className="flex flex-wrap items-center gap-4 border-t border-border/30 bg-muted/20 px-6 py-3 text-xs text-muted-foreground">
+                <span>{a.marks.length} students</span>
+                <span className="tabular-nums">Avg GPA: <strong className="text-foreground">{(a.marks.reduce((s, m) => s + (m.gradePoint != null ? Number(m.gradePoint) : 0), 0) / a.marks.length).toFixed(2)}</strong></span>
+                {a.marks.filter((m) => m.grade === 'A+').length > 0 && <span className="text-emerald-600 dark:text-emerald-400">{a.marks.filter((m) => m.grade === 'A+').length}× A+</span>}
+                {a.marks.filter((m) => m.grade === 'F').length > 0 && <span className="text-destructive">{a.marks.filter((m) => m.grade === 'F').length}× F</span>}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

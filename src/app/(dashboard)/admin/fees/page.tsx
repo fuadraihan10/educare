@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label'
 import { PageHeader } from '@/components/page-header'
 import { EmptyState } from '@/components/empty-state'
 import { selectClass } from '@/components/form-helpers'
+import { formatCurrency } from '@/lib/format'
 
 export const metadata: Metadata = { title: 'Fees' }
 
@@ -95,7 +96,7 @@ export default async function FeesPage({ searchParams }: { searchParams: Promise
                   <TableCell className="font-mono text-xs">{inv.invoiceNo}</TableCell>
                   <TableCell className="font-medium">{inv.student.firstName} {inv.student.lastName}</TableCell>
                   <TableCell className="text-xs">{inv.term.name}</TableCell>
-                  <TableCell className="text-sm">{Number(inv.totalAmount).toLocaleString()}</TableCell>
+                  <TableCell className="text-sm">{formatCurrency(Number(inv.totalAmount))}</TableCell>
                   <TableCell><Badge variant={invoiceStatusVariant[inv.status] ?? 'outline'}>{inv.status}</Badge></TableCell>
                   <TableCell className="text-xs">{new Date(inv.dueDate).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right"><Button variant="outline" size="sm" nativeButton={false} render={<Link href={`/admin/fees/${inv.id}`} />}>View</Button></TableCell>

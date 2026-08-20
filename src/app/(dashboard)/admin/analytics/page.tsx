@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/page-header'
 import { Users, GraduationCap, UserRound, BookOpen, CalendarCheck, Wallet, Megaphone } from 'lucide-react'
+import { formatCurrency } from '@/lib/format'
 
 export const metadata: Metadata = { title: 'Analytics' }
 
@@ -147,8 +148,8 @@ export default async function AnalyticsPage() {
               { label: 'Total attendance records', value: totalAttendance.toLocaleString(), variant: 'secondary' as const },
               { label: 'Announcements', value: totalAnnouncements, variant: 'secondary' as const },
               { label: 'Total invoices', value: totalInvoices, variant: 'secondary' as const },
-              { label: 'Outstanding amount', value: Number(overdueAmount._sum.totalAmount ?? 0).toLocaleString(), variant: 'destructive' as const },
-              { label: 'Pending payments', value: `${pendingPayments._count.id} (${Number(pendingPayments._sum.amount ?? 0).toLocaleString()})`, variant: 'destructive' as const },
+              { label: 'Outstanding amount', value: formatCurrency(Number(overdueAmount._sum.totalAmount ?? 0)), variant: 'destructive' as const },
+              { label: 'Pending payments', value: `${pendingPayments._count.id} (${formatCurrency(Number(pendingPayments._sum.amount ?? 0))})`, variant: 'destructive' as const },
             ].map((item) => (
               <div key={item.label} className="flex items-center justify-between text-sm rounded-lg bg-muted/30 px-3 py-2">
                 <span className="text-muted-foreground">{item.label}</span>

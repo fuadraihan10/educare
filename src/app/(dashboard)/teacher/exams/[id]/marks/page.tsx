@@ -13,16 +13,14 @@ import { prisma } from '@/lib/db'
 
 export const metadata: Metadata = { title: 'Marks Entry' }
 
-export default async function MarksEntryPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requirePage('SUPER_ADMIN', 'ADMIN', 'TEACHER')
+export default async function TeacherMarksEntryPage({ params }: { params: Promise<{ id: string }> }) {
+  const user = await requirePage('TEACHER')
+  const teacher = await prisma.teacher.findUnique({ where: { userId: user.id }, select: { id: true } })
+  if (!teacher) notFound()
+
   const { id } = await params
   const assessment = await getAssessment(id)
-  if (!assessment) notFound()
-
-  if (user.role === 'TEACHER') {
-    const teacher = await prisma.teacher.findUnique({ where: { userId: user.id }, select: { id: true } })
-    if (!teacher || assessment.teacherId !== teacher.id) notFound()
-  }
+  if (!assessment || assessment.teacherId !== teacher.id) notFound()
 
   const students = await prisma.student.findMany({
     where: { classId: assessment.classId, status: 'ACTIVE' },
@@ -39,8 +37,8 @@ export default async function MarksEntryPage({ params }: { params: Promise<{ id:
         title={`Enter Marks — ${assessment.name}`}
         subtitle={<span className="text-xs">{assessment.class.name} · Section {assessment.class.section} — {assessment.subject.name} (Max: {String(assessment.maxMarks)})</span>}
         breadcrumb={
-          <Link href={`/admin/exams/${id}`} className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors">
-            <ArrowLeft className="size-3.5" /> {assessment.name}
+          <Link href="/teacher/exams" className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors">
+            <ArrowLeft className="size-3.5" /> Exams
           </Link>
         }
       />

@@ -465,7 +465,7 @@ model Assessment {
   teacher     Teacher        @relation(fields: [teacherId], references: [id])
   name        String
   type        AssessmentType @default(OTHER)
-  maxMarks    Decimal        @db.Decimal(5, 2)
+  maxMarks    Int
   weight      Decimal        @default(1) @db.Decimal(5, 2)
   date        DateTime?      @db.Date
   isPublished Boolean        @default(false)
@@ -484,8 +484,9 @@ model Mark {
   assessment     Assessment @relation(fields: [assessmentId], references: [id])
   studentId      String
   student        Student  @relation(fields: [studentId], references: [id])
-  marksObtained  Decimal  @db.Decimal(5, 2)
+  marksObtained  Int
   grade          String?
+  gradePoint     Decimal? @db.Decimal(4, 2)
   isOverride     Boolean  @default(false)
   overriddenById String?
   overriddenBy   User?    @relation("MarkOverriddenBy", fields: [overriddenById], references: [id])

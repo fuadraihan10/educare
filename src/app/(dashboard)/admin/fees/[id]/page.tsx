@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/page-header'
 import { Badge } from '@/components/ui/badge'
 import { invoiceStatusVariant } from '@/lib/status-variants'
 import { ConfirmPaymentButton, RejectPaymentButton } from '@/components/fees/payment-actions'
+import { formatCurrency } from '@/lib/format'
 
 import dayjs from 'dayjs'
 
@@ -37,7 +38,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
       <div className="grid gap-4 sm:grid-cols-3">
         {[
-          { label: 'Total Amount', value: Number(invoice.totalAmount).toLocaleString(), large: true },
+          { label: 'Total Amount', value: formatCurrency(Number(invoice.totalAmount)), large: true },
           { label: 'Issue Date', value: dayjs(invoice.issueDate).format('DD MMM YYYY'), large: false },
           { label: 'Due Date', value: dayjs(invoice.dueDate).format('DD MMM YYYY'), large: false },
         ].map((stat) => (
@@ -70,7 +71,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                   {invoice.items.map((item) => (
                     <tr key={item.id} className="border-b border-border/20 last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-3 font-medium">{item.description}</td>
-                      <td className="px-4 py-3 text-right font-mono">{Number(item.amount).toLocaleString()}</td>
+                      <td className="px-4 py-3 text-right font-mono">{formatCurrency(Number(item.amount))}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -100,7 +101,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                 <tbody>
                   {invoice.payments.map((p) => (
                     <tr key={p.id} className="border-b border-border/20 last:border-0 hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3 font-medium font-mono">{Number(p.amount).toLocaleString()}</td>
+                      <td className="px-4 py-3 font-medium font-mono">{formatCurrency(Number(p.amount))}</td>
                       <td className="px-4 py-3">{p.method}</td>
                       <td className="px-4 py-3"><Badge variant={p.status === 'CONFIRMED' ? 'default' : p.status === 'PENDING' ? 'secondary' : 'destructive'} className="text-xs">{p.status}</Badge></td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{p.submittedBy?.name ?? '—'}</td>

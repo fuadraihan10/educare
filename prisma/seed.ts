@@ -68,13 +68,21 @@ async function main() {
   // 4. Classes
   console.log('Creating classes...')
   const classNames = [
-    { name: 'Class 6', section: 'Proton', code: 'CLS6-PRO', room: 'Room 101' },
-    { name: 'Class 6', section: 'A', code: 'CLS6-A', room: 'Room 102' },
-    { name: 'Class 6', section: 'B', code: 'CLS6-B', room: 'Room 103' },
-    { name: 'Class 7', section: 'A', code: 'CLS7-A', room: 'Room 201' },
-    { name: 'Class 7', section: 'B', code: 'CLS7-B', room: 'Room 202' },
+    { name: 'Class 1', section: 'A', code: 'CLS1-A', room: 'Room 101' },
+    { name: 'Class 2', section: 'A', code: 'CLS2-A', room: 'Room 102' },
+    { name: 'Class 3', section: 'A', code: 'CLS3-A', room: 'Room 103' },
+    { name: 'Class 4', section: 'A', code: 'CLS4-A', room: 'Room 104' },
+    { name: 'Class 5', section: 'A', code: 'CLS5-A', room: 'Room 105' },
+    { name: 'Class 6', section: 'A', code: 'CLS6-A', room: 'Room 201' },
+    { name: 'Class 6', section: 'B', code: 'CLS6-B', room: 'Room 202' },
+    { name: 'Class 7', section: 'A', code: 'CLS7-A', room: 'Room 203' },
+    { name: 'Class 7', section: 'B', code: 'CLS7-B', room: 'Room 204' },
     { name: 'Class 8', section: 'A', code: 'CLS8-A', room: 'Room 301' },
+    { name: 'Class 8', section: 'B', code: 'CLS8-B', room: 'Room 302' },
     { name: 'Class 9', section: 'A', code: 'CLS9-A', room: 'Room 401' },
+    { name: 'Class 9', section: 'B', code: 'CLS9-B', room: 'Room 402' },
+    { name: 'Class 10', section: 'A', code: 'CLS10-A', room: 'Room 501' },
+    { name: 'Class 10', section: 'B', code: 'CLS10-B', room: 'Room 502' },
   ]
 
   const classes = []
@@ -94,14 +102,24 @@ async function main() {
   // 5. Subjects
   console.log('Creating subjects...')
   const subjectNames = [
-    { name: 'Mathematics', code: 'MATH', description: 'Core mathematics' },
-    { name: 'English', code: 'ENG', description: 'English language and literature' },
-    { name: 'Science', code: 'SCI', description: 'General science' },
-    { name: 'History', code: 'HIST', description: 'World history' },
-    { name: 'Geography', code: 'GEO', description: 'Physical and human geography' },
-    { name: 'Art', code: 'ART', description: 'Visual arts' },
+    { name: 'Bangla', code: 'BAN', description: 'Bangla language and literature (compulsory)' },
+    { name: 'English', code: 'ENG', description: 'English language and literature (compulsory)' },
+    { name: 'Mathematics', code: 'MATH', description: 'Mathematics (compulsory)' },
+    { name: 'Science', code: 'SCI', description: 'General science (compulsory)' },
+    { name: 'Social Science', code: 'SS', description: 'Social science (primary)' },
+    { name: 'Religion', code: 'REL', description: 'Religious studies (Islam/Hindu/Buddhist/Christian)' },
     { name: 'Physical Education', code: 'PE', description: 'Physical education and sports' },
-    { name: 'Computer Science', code: 'CS', description: 'Computer fundamentals' },
+    { name: 'Arts & Craft', code: 'ART', description: 'Arts and crafts (primary)' },
+    { name: 'ICT', code: 'ICT', description: 'Information and Communication Technology' },
+    { name: 'Bangladesh & Global Studies', code: 'BGS', description: 'Bangladesh and Global Studies (SSC)' },
+    { name: 'Physics', code: 'PHY', description: 'Physics (SSC)' },
+    { name: 'Chemistry', code: 'CHEM', description: 'Chemistry (SSC)' },
+    { name: 'Biology', code: 'BIO', description: 'Biology (SSC)' },
+    { name: 'Higher Mathematics', code: 'H.MATH', description: 'Higher Mathematics (SSC optional)' },
+    { name: 'Geography', code: 'GEO', description: 'Geography (SSC)' },
+    { name: 'Accounting', code: 'ACC', description: 'Accounting (SSC commerce)' },
+    { name: 'Business Entrepreneurship', code: 'BE', description: 'Business Entrepreneurship (SSC commerce)' },
+    { name: 'Finance & Banking', code: 'FB', description: 'Finance and Banking (SSC commerce)' },
   ]
 
   const subjects = []
@@ -208,6 +226,19 @@ async function main() {
     },
   })
 
+  // 8b. Enrollment
+  await prisma.enrollment.upsert({
+    where: { studentId_academicYearId_classId: { studentId: student.id, academicYearId: academicYear.id, classId: classes[0].id } },
+    update: {},
+    create: {
+      id: 'seed-enrollment-001',
+      studentId: student.id,
+      classId: classes[0].id,
+      academicYearId: academicYear.id,
+      status: 'ACTIVE',
+    },
+  })
+
   // 9. Parent user
   console.log('Creating parent user...')
   const parentPassword = await hash('Parent@12345', 12)
@@ -258,14 +289,13 @@ async function main() {
   // 11. Grade scales
   console.log('Creating grade scales...')
   const gradeScales = [
-    { label: 'A+', minPercent: 90, maxPercent: 100, points: 4.0, order: 1 },
-    { label: 'A', minPercent: 80, maxPercent: 89.99, points: 3.7, order: 2 },
-    { label: 'B+', minPercent: 70, maxPercent: 79.99, points: 3.3, order: 3 },
-    { label: 'B', minPercent: 60, maxPercent: 69.99, points: 3.0, order: 4 },
-    { label: 'C+', minPercent: 50, maxPercent: 59.99, points: 2.3, order: 5 },
-    { label: 'C', minPercent: 40, maxPercent: 49.99, points: 2.0, order: 6 },
-    { label: 'D', minPercent: 30, maxPercent: 39.99, points: 1.0, order: 7 },
-    { label: 'F', minPercent: 0, maxPercent: 29.99, points: 0.0, order: 8 },
+    { label: 'A+', minPercent: 80, maxPercent: 100, points: 5.0, order: 1 },
+    { label: 'A', minPercent: 70, maxPercent: 79.99, points: 4.0, order: 2 },
+    { label: 'A-', minPercent: 60, maxPercent: 69.99, points: 3.5, order: 3 },
+    { label: 'B+', minPercent: 50, maxPercent: 59.99, points: 3.0, order: 4 },
+    { label: 'B', minPercent: 40, maxPercent: 49.99, points: 2.0, order: 5 },
+    { label: 'C', minPercent: 33, maxPercent: 39.99, points: 1.0, order: 6 },
+    { label: 'F', minPercent: 0, maxPercent: 32.99, points: 0.0, order: 7 },
   ]
 
   for (const gs of gradeScales) {
@@ -304,7 +334,8 @@ async function main() {
       assessmentId: assessment.id,
       studentId: student.id,
       marksObtained: 85,
-      grade: 'A',
+      grade: 'A+',
+      gradePoint: 5.0,
       createdById: adminUser.id,
     },
   })
@@ -371,8 +402,10 @@ async function main() {
 
   // 15. Announcement
   console.log('Creating announcement...')
-  await prisma.announcement.create({
-    data: {
+  await prisma.announcement.upsert({
+    where: { id: 'seed-announce-001' },
+    update: {},
+    create: {
       id: 'seed-announce-001',
       title: 'Welcome to 2026-2027 Academic Year',
       body: 'We welcome all students, teachers, and parents to the new academic year. Please check your schedules and fee payment deadlines.',

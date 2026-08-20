@@ -93,7 +93,7 @@ export async function createInvoice(_prev: InvoiceFormState, formData: FormData)
         await deliverNotification({
           userId: studentUser.userId,
           title: 'New Invoice',
-          body: `Invoice ${invoiceNo} has been created for BDT ${total.toLocaleString()}. Due by ${v.dueDate}.`,
+          body: `Invoice ${invoiceNo} has been created for ৳${total.toLocaleString()}. Due by ${v.dueDate}.`,
           type: 'info',
           category: 'fees',
           entity: 'Invoice',
@@ -173,7 +173,7 @@ export async function submitPayment(invoiceId: string, _prev: PaymentFormState, 
   const invoiceStudent = await prisma.invoice.findUnique({ where: { id: invoiceId }, select: { student: { select: { userId: true } } } })
   await deliverNotificationToRole('ADMIN', {
     title: 'Payment Submitted',
-    body: `A payment of BDT ${amount.toLocaleString()} has been submitted for invoice ${invoiceId.slice(0, 8)}... via ${method}.`,
+    body: `A payment of ৳${amount.toLocaleString()} has been submitted for invoice ${invoiceId.slice(0, 8)}... via ${method}.`,
     type: 'info',
     category: 'fees',
     entity: 'Payment',
@@ -184,7 +184,7 @@ export async function submitPayment(invoiceId: string, _prev: PaymentFormState, 
     await deliverNotification({
       userId: invoiceStudent.student.userId,
       title: 'Payment Submitted',
-      body: `Your payment of BDT ${amount.toLocaleString()} has been submitted and is pending confirmation.`,
+      body: `Your payment of ৳${amount.toLocaleString()} has been submitted and is pending confirmation.`,
       type: 'success',
       category: 'fees',
       entity: 'Payment',
@@ -246,7 +246,7 @@ export async function confirmPayment(paymentId: string, _prev: PaymentFormState,
   revalidatePath(`/admin/fees/${payment.invoiceId}`)
   revalidatePath('/parent/fees')
   revalidatePath('/student/fees')
-  redirect(`/admin/fees/${payment.invoiceId}`)
+  return { status: 'success', message: 'Payment confirmed.' }
 }
 
 export async function rejectPayment(paymentId: string, _prev: PaymentFormState, _formData: FormData): Promise<PaymentFormState> {
@@ -276,7 +276,7 @@ export async function rejectPayment(paymentId: string, _prev: PaymentFormState, 
   revalidatePath(`/admin/fees/${payment.invoiceId}`)
   revalidatePath('/parent/fees')
   revalidatePath('/student/fees')
-  redirect(`/admin/fees/${payment.invoiceId}`)
+  return { status: 'success', message: 'Payment rejected.' }
 }
 
 export type FeeStructureFormState = {

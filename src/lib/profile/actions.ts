@@ -103,53 +103,40 @@ export async function updateNotifications(_prev: NotificationFormState, formData
   return { status: 'success', message: 'Notification preferences saved.' }
 }
 
-export type AppearanceFormState = {
-  status: 'idle' | 'success' | 'error'
-  message?: string
-}
-
-export async function updateAppearance(_prev: AppearanceFormState, formData: FormData): Promise<AppearanceFormState> {
-  const actor = await requireRole('SUPER_ADMIN', 'ADMIN', 'TEACHER', 'STUDENT', 'PARENT')
-  const get = (key: string, fallback: string) => (formData.get(key) as string) || fallback
-
-  await prisma.userPreference.upsert({
-    where: { userId: actor.id },
-    create: {
-      userId: actor.id,
-      theme: get('theme', 'system'),
-      sidebarBehavior: get('sidebarBehavior', 'expanded'),
-      density: get('density', 'comfortable'),
-      dateFormat: get('dateFormat', 'YYYY-MM-DD'),
-      timeFormat: get('timeFormat', '24h'),
-    },
-    update: {
-      theme: get('theme', 'system'),
-      sidebarBehavior: get('sidebarBehavior', 'expanded'),
-      density: get('density', 'comfortable'),
-      dateFormat: get('dateFormat', 'YYYY-MM-DD'),
-      timeFormat: get('timeFormat', '24h'),
-    },
-  })
-
-  await auditLog({ actorId: actor.id, action: 'UPDATE_APPEARANCE', entity: 'UserPreference', entityId: actor.id })
-  revalidatePath('/profile/appearance')
-  return { status: 'success', message: 'Appearance settings saved.' }
-}
-
 export async function revokeSession(sessionId: string) {
   const actor = await requireRole('SUPER_ADMIN', 'ADMIN', 'TEACHER', 'STUDENT', 'PARENT')
-  await prisma.userSession.deleteMany({ where: { id: sessionId, userId: actor.id, isCurrent: false } })
+  await prisma.userSession.deleteMany({ where: { id: sessionId, userId: actor.id } })
   await auditLog({ actorId: actor.id, action: 'REVOKE_SESSION', entity: 'UserSession', entityId: sessionId })
   revalidatePath('/profile/sessions')
   return { success: true }
 }
 
-export async function revokeAllSessions() {
+export async function revokeAllSessions(excludeSessionId?: string) {
   const actor = await requireRole('SUPER_ADMIN', 'ADMIN', 'TEACHER', 'STUDENT', 'PARENT')
-  await prisma.userSession.deleteMany({ where: { userId: actor.id, isCurrent: false } })
-  await auditLog({ actorId: actor.id, action: 'REVOKE_ALL_SESSIONS', entity: 'UserSession' })
+  const where: Record<string, unknown> = { userId: actor.id }
+  if (excludeSessionId) {
+    where.id = { not: excludeSessionId }
+  }
+  const result = await prisma.userSession.deleteMany({ where })
+  await auditLog({ actorId: actor.id, action: 'REVOKE_ALL_SESSIONS', entity: 'UserSession', details: { count: result.count } })
   revalidatePath('/profile/sessions')
+  return { success: true, count: result.count }
+}
+
+export async function adminRevokeSession(sessionId: string) {
+  const actor = await requireRole('SUPER_ADMIN', 'ADMIN')
+  await prisma.userSession.deleteMany({ where: { id: sessionId } })
+  await auditLog({ actorId: actor.id, action: 'ADMIN_REVOKE_SESSION', entity: 'UserSession', entityId: sessionId })
+  revalidatePath('/admin/active-sessions')
   return { success: true }
+}
+
+export async function adminRevokeAllUserSessions(userId: string) {
+  const actor = await requireRole('SUPER_ADMIN', 'ADMIN')
+  const result = await prisma.userSession.deleteMany({ where: { userId } })
+  await auditLog({ actorId: actor.id, action: 'ADMIN_REVOKE_ALL_SESSIONS', entity: 'UserSession', details: { targetUserId: userId, count: result.count } })
+  revalidatePath('/admin/active-sessions')
+  return { success: true, count: result.count }
 }
 
 export async function logUserActivity(params: { userId: string; action: string; category?: string; details?: Record<string, unknown>; ipAddress?: string; device?: string; result?: string }) {

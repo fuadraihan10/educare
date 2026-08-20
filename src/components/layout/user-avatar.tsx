@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { signOut } from 'next-auth/react'
 import {
-  LogOut, User, KeyRound, Bell, Palette, Shield, Activity,
+  LogOut, User, KeyRound, Bell, Shield, Activity,
   Clock, Settings, ChevronRight, Loader2
 } from 'lucide-react'
 
@@ -101,10 +101,6 @@ export function UserAvatar({ name, email, regNo, role, sessionId }: UserAvatarPr
           <DropdownMenuItem className="gap-2.5 rounded-lg cursor-pointer px-2.5" render={<Link href="/profile/notifications" />}>
             <Bell className="size-4" />
             <span>Notifications</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem className="gap-2.5 rounded-lg cursor-pointer px-2.5" render={<Link href="/profile/appearance" />}>
-            <Palette className="size-4" />
-            <span>Appearance</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
 

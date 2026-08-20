@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 type Student = { id: string; firstName: string; lastName: string; admissionNo: string; rollNo: number | null }
 
 const STATUS_OPTIONS = ['PRESENT', 'ABSENT', 'LATE', 'LEAVE'] as const
+const statusShort: Record<string, string> = { PRESENT: 'P', ABSENT: 'A', LATE: 'L', LEAVE: 'LV' }
 const statusColors: Record<string, string> = {
   PRESENT: 'bg-emerald-100 text-emerald-800 border-emerald-300 shadow-sm shadow-emerald-500/10 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-700',
   ABSENT: 'bg-red-100 text-red-800 border-red-300 shadow-sm shadow-red-500/10 dark:bg-red-900/30 dark:text-red-400 dark:border-red-700',
@@ -41,6 +42,8 @@ export function AttendanceMarkForm({
     students.map((s) => ({ studentId: s.id, status: entries[s.id] ?? 'PRESENT' }))
   )
 
+  const presentCount = Object.values(entries).filter((v) => v === 'PRESENT').length
+
   return (
     <form action={formAction}>
       <input type="hidden" name="classId" value={classId} />
@@ -54,7 +57,8 @@ export function AttendanceMarkForm({
         </div>
       )}
 
-      <div className="glass-card overflow-hidden rounded-2xl">
+      {/* Desktop: Table layout */}
+      <div className="glass-card overflow-hidden rounded-2xl hidden md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border/50 bg-muted/20">
@@ -90,7 +94,39 @@ export function AttendanceMarkForm({
         </table>
       </div>
 
-      <div className="mt-4 flex items-center gap-4">
+      {/* Mobile: Card layout */}
+      <div className="space-y-2 md:hidden">
+        {students.map((s) => (
+          <div key={s.id} className="glass-card rounded-xl p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="shrink-0 size-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                  {s.rollNo ?? '?'}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{s.firstName} {s.lastName}</p>
+                  <p className="text-[10px] text-muted-foreground font-mono">{s.admissionNo}</p>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-1">
+              {STATUS_OPTIONS.map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setStatus(s.id, opt)}
+                  className={`rounded-lg border px-1 py-1.5 text-[10px] font-semibold transition-all ${entries[s.id] === opt || (!entries[s.id] && opt === 'PRESENT') ? `${statusColors[opt]} scale-[1.02]` : 'border-border/50 bg-muted/30 text-muted-foreground hover:bg-muted/50'}`}
+                >
+                  <span className="hidden min-[400px]:inline">{opt}</span>
+                  <span className="min-[400px]:hidden">{statusShort[opt]}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
         <Button type="submit" disabled={pending} className="transition-all">
           {pending ? (
             <>
@@ -102,7 +138,7 @@ export function AttendanceMarkForm({
           )}
         </Button>
         <div className="rounded-lg bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground">
-          {students.length} students — Present: <span className="font-semibold text-emerald-600 dark:text-emerald-400">{Object.values(entries).filter((v) => v === 'PRESENT').length}</span>
+          {students.length} students — Present: <span className="font-semibold text-emerald-600 dark:text-emerald-400">{presentCount}</span>
         </div>
       </div>
     </form>
