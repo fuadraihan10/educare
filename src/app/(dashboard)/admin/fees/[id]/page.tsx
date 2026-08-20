@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/page-header'
 import { Badge } from '@/components/ui/badge'
 import { invoiceStatusVariant } from '@/lib/status-variants'
 import { ConfirmPaymentButton, RejectPaymentButton } from '@/components/fees/payment-actions'
+import { CancelInvoiceButton, DeleteInvoiceButton } from '@/components/fees/invoice-actions'
 import { formatCurrency } from '@/lib/format'
 
 import dayjs from 'dayjs'
@@ -21,6 +22,9 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   const { id } = await params
   const invoice = await getInvoice(id)
   if (!invoice) notFound()
+
+  const canCancel = invoice.status !== 'CANCELLED' && invoice.status !== 'PAID'
+  const canDelete = !invoice.payments.some((p) => p.status === 'PENDING' || p.status === 'CONFIRMED')
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -34,6 +38,8 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
         }
       >
         <Badge variant={invoiceStatusVariant[invoice.status] ?? 'outline'} className="text-xs">{invoice.status}</Badge>
+        {canCancel && <CancelInvoiceButton invoiceId={id} invoiceNo={invoice.invoiceNo} />}
+        {canDelete && <DeleteInvoiceButton invoiceId={id} invoiceNo={invoice.invoiceNo} />}
       </PageHeader>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -52,6 +58,14 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           </Card>
         ))}
       </div>
+
+      {invoice.notes && (
+        <Card className="overflow-hidden">
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground">{invoice.notes}</p>
+          </CardContent>
+        </Card>
+      )}
 
       {invoice.items.length > 0 && (
         <Card className="overflow-hidden">
@@ -75,6 +89,12 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                     </tr>
                   ))}
                 </tbody>
+                <tfoot>
+                  <tr className="border-t border-border/30 font-semibold">
+                    <td className="px-4 py-3 text-right text-xs uppercase tracking-wider text-muted-foreground">Total</td>
+                    <td className="px-4 py-3 text-right font-mono">{formatCurrency(Number(invoice.totalAmount))}</td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           </CardContent>
@@ -93,8 +113,11 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                   <tr className="border-b border-border/30">
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs uppercase tracking-wider" scope="col">Amount</th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs uppercase tracking-wider" scope="col">Method</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs uppercase tracking-wider" scope="col">Reference</th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs uppercase tracking-wider" scope="col">Status</th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs uppercase tracking-wider" scope="col">Submitted by</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs uppercase tracking-wider" scope="col">Confirmed by</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs uppercase tracking-wider" scope="col">Date</th>
                     <th className="px-4 py-3 text-right font-medium text-muted-foreground text-xs uppercase tracking-wider" scope="col">Action</th>
                   </tr>
                 </thead>
@@ -103,9 +126,21 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                     <tr key={p.id} className="border-b border-border/20 last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-3 font-medium font-mono">{formatCurrency(Number(p.amount))}</td>
                       <td className="px-4 py-3">{p.method}</td>
-                      <td className="px-4 py-3"><Badge variant={p.status === 'CONFIRMED' ? 'default' : p.status === 'PENDING' ? 'secondary' : 'destructive'} className="text-xs">{p.status}</Badge></td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground font-mono">{p.reference ?? '—'}</td>
+                      <td className="px-4 py-3">
+                        <Badge variant={p.status === 'CONFIRMED' ? 'default' : p.status === 'PENDING' ? 'secondary' : 'destructive'} className="text-xs">{p.status}</Badge>
+                      </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{p.submittedBy?.name ?? '—'}</td>
-                      <td className="px-4 py-3 text-right">{p.status === 'PENDING' && <div className="flex justify-end gap-2"><ConfirmPaymentButton paymentId={p.id} /><RejectPaymentButton paymentId={p.id} /></div>}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{p.confirmedBy?.name ?? '—'}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{dayjs(p.createdAt).format('DD MMM YYYY HH:mm')}</td>
+                      <td className="px-4 py-3 text-right">
+                        {p.status === 'PENDING' && (
+                          <div className="flex justify-end gap-2">
+                            <ConfirmPaymentButton paymentId={p.id} />
+                            <RejectPaymentButton paymentId={p.id} />
+                          </div>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

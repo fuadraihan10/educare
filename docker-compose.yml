@@ -40,6 +40,7 @@ services:
       AUTH_SECRET: ${AUTH_SECRET:?Set AUTH_SECRET (min 32 chars)}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       NODE_ENV: production
+      UPLOAD_STORAGE_DIR: /app/storage
     depends_on:
       postgres:
         condition: service_healthy

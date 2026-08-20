@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { ArrowLeft, Plus } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 
 import { requirePage } from '@/lib/permissions'
 import { createFeeStructure } from '@/lib/fees/actions'

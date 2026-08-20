@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Field } from '@/components/form-helpers'
-import { formatCurrency } from '@/lib/format'
 
 export function FeeStructureForm({
   action,

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { Search, Plus, CreditCard } from 'lucide-react'
+import { Search, Plus, CreditCard, Layers } from 'lucide-react'
 
 import { requirePage } from '@/lib/permissions'
 import { listInvoices } from '@/lib/fees'
@@ -44,7 +44,14 @@ export default async function FeesPage({ searchParams }: { searchParams: Promise
       <PageHeader
         title="Fee Management"
         subtitle={`${total} invoice${total === 1 ? '' : 's'}`}
-        action={<Button render={<Link href="/admin/fees/new" />}><Plus /> New invoice</Button>}
+        action={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" render={<Link href="/admin/fees/structures" />}>
+              <Layers /> Fee structures
+            </Button>
+            <Button render={<Link href="/admin/fees/new" />}><Plus /> New invoice</Button>
+          </div>
+        }
       />
       <div className="flex flex-wrap items-end gap-3">
         <form action="/admin/fees" method="GET" className="flex items-end gap-3">

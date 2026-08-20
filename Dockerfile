@@ -25,6 +25,7 @@ RUN mkdir -p /app/storage && chown nextjs:nodejs /app/storage
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000
+ENV UPLOAD_STORAGE_DIR=/app/storage
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
   CMD wget -qO- http://localhost:3000/api/v1/health || exit 1
