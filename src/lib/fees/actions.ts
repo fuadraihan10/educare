@@ -397,6 +397,17 @@ export async function deleteInvoice(id: string): Promise<void> {
   revalidatePath('/admin/fees')
 }
 
+export async function deleteInvoiceAction(_prev: InvoiceFormState, formData: FormData): Promise<InvoiceFormState> {
+  const id = String(formData.get('invoiceId') ?? '')
+  if (!id) return { status: 'error', message: 'Missing invoice ID.' }
+  try {
+    await deleteInvoice(id)
+    return { status: 'success', message: 'Invoice deleted.' }
+  } catch {
+    return { status: 'error', message: 'Failed to delete invoice.' }
+  }
+}
+
 export async function markOverdueInvoices(): Promise<number> {
   const today = new Date()
   today.setHours(0, 0, 0, 0)

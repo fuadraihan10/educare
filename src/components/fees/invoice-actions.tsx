@@ -4,7 +4,7 @@ import { useActionState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Ban, Trash2 } from 'lucide-react'
 
-import { cancelInvoice, deleteInvoice } from '@/lib/fees/actions'
+import { cancelInvoice, deleteInvoiceAction } from '@/lib/fees/actions'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,12 +57,11 @@ export function CancelInvoiceButton({ invoiceId, invoiceNo }: { invoiceId: strin
 
 export function DeleteInvoiceButton({ invoiceId, invoiceNo }: { invoiceId: string; invoiceNo: string }) {
   const router = useRouter()
+  const [state, action, pending] = useActionState(deleteInvoiceAction, { status: 'idle' })
 
-  async function handleDelete() {
-    'use server'
-    await deleteInvoice(invoiceId)
-    router.push('/admin/fees')
-  }
+  useEffect(() => {
+    if (state.status === 'success') router.push('/admin/fees')
+  }, [state.status, router])
 
   return (
     <AlertDialog>
@@ -80,8 +79,13 @@ export function DeleteInvoiceButton({ invoiceId, invoiceNo }: { invoiceId: strin
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <form action={handleDelete}>
-            <AlertDialogAction type="submit" variant="destructive">
+          <form action={action}>
+            <input type="hidden" name="invoiceId" value={invoiceId} />
+            {state.status === 'error' && state.message && (
+              <p role="alert" className="mb-2 text-xs text-destructive">{state.message}</p>
+            )}
+            <AlertDialogAction type="submit" variant="destructive" disabled={pending}>
+              {pending && <Loader2 className="animate-spin" />}
               Delete invoice
             </AlertDialogAction>
           </form>
