@@ -3,10 +3,9 @@ import 'server-only'
 import { mkdir, writeFile, readFile as fsReadFile, unlink } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
+import { put, head, del } from '@vercel/blob'
 
 import { FileCategory } from '@/generated/prisma/client'
-
-const storageRoot = path.resolve(/* turbopackIgnore: true */ process.cwd(), process.env.UPLOAD_STORAGE_DIR ?? 'storage')
 
 export const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
 export const MAX_IMAGE_SIZE = 5 * 1024 * 1024 // 5 MB
@@ -41,6 +40,12 @@ function validateMime(mimeType: string): MimeInfo {
   return info
 }
 
+const useBlob = !!process.env.BLOB_READ_WRITE_TOKEN
+
+// --- Local filesystem helpers (used when BLOB_READ_WRITE_TOKEN is not set) ---
+
+const storageRoot = path.resolve(/* turbopackIgnore: true */ process.cwd(), process.env.UPLOAD_STORAGE_DIR ?? 'storage')
+
 function resolveSafePath(storageKey: string): string {
   const abs = path.resolve(/* turbopackIgnore: true */ storageRoot, storageKey)
   if (!abs.startsWith(path.resolve(/* turbopackIgnore: true */ storageRoot))) {
@@ -48,6 +53,8 @@ function resolveSafePath(storageKey: string): string {
   }
   return abs
 }
+
+// --- Exported API ---
 
 export async function saveFile(input: {
   data: Buffer
@@ -67,10 +74,18 @@ export async function saveFile(input: {
 
   const filename = `${randomUUID()}.${ext}`
   const storageKey = `${input.category.toLowerCase()}/${filename}`
-  const abs = resolveSafePath(storageKey)
+
   try {
-    await mkdir(path.dirname(abs), { recursive: true })
-    await writeFile(abs, input.data, { flag: 'wx' })
+    if (useBlob) {
+      await put(storageKey, input.data, {
+        access: 'private',
+        contentType: input.mimeType,
+      })
+    } else {
+      const abs = resolveSafePath(storageKey)
+      await mkdir(path.dirname(abs), { recursive: true })
+      await writeFile(abs, input.data, { flag: 'wx' })
+    }
   } catch (e) {
     throw new StorageError(`File save failed: ${(e as Error).message}`)
   }
@@ -78,22 +93,35 @@ export async function saveFile(input: {
 }
 
 export async function readFile(storageKey: string): Promise<{ data: Buffer; mimeType: string }> {
-  const abs = resolveSafePath(storageKey)
-  let data: Buffer
   try {
-    data = await fsReadFile(abs)
+    if (useBlob) {
+      const blob = await head(storageKey)
+      const response = await fetch(blob.url, {
+        headers: { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` },
+      })
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      const arrayBuffer = await response.arrayBuffer()
+      return { data: Buffer.from(arrayBuffer), mimeType: blob.contentType ?? 'application/octet-stream' }
+    } else {
+      const abs = resolveSafePath(storageKey)
+      const data = await fsReadFile(abs)
+      const ext = storageKey.split('.').pop()?.toLowerCase()
+      const mimeType = Object.entries(mimeRegistry).find(([, v]) => v.ext === ext)?.[0] ?? 'application/octet-stream'
+      return { data, mimeType }
+    }
   } catch (e) {
     throw new StorageError(`File read failed: ${(e as Error).message}`)
   }
-  const ext = storageKey.split('.').pop()?.toLowerCase()
-  const mimeType = Object.entries(mimeRegistry).find(([, v]) => v.ext === ext)?.[0] ?? 'application/octet-stream'
-  return { data, mimeType }
 }
 
 export async function deleteFile(storageKey: string): Promise<void> {
-  const abs = resolveSafePath(storageKey)
   try {
-    await unlink(abs)
+    if (useBlob) {
+      await del(storageKey)
+    } else {
+      const abs = resolveSafePath(storageKey)
+      await unlink(abs)
+    }
   } catch (e) {
     throw new StorageError(`File delete failed: ${(e as Error).message}`)
   }

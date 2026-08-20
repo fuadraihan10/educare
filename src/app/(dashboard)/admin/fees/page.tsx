@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { invoiceStatusVariant } from '@/lib/status-variants'
+import { invoiceStatusVariant, feeStatusLabel } from '@/lib/status-variants'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination'
 import { Label } from '@/components/ui/label'
@@ -68,7 +68,7 @@ export default async function FeesPage({ searchParams }: { searchParams: Promise
             <Label htmlFor="fee-status">Status</Label>
             <select id="fee-status" name="status" className={selectClass} defaultValue={status}>
               <option value="">All statuses</option>
-              {['DRAFT', 'ISSUED', 'PARTIAL', 'PAID', 'OVERDUE', 'CANCELLED'].map((s) => <option key={s} value={s}>{s}</option>)}
+              {['DRAFT', 'ISSUED', 'PARTIAL', 'PAID', 'OVERDUE', 'CANCELLED'].map((s) => <option key={s} value={s}>{feeStatusLabel[s] ?? s}</option>)}
             </select>
           </div>
           <Button type="submit" variant="outline">Filter</Button>
@@ -85,13 +85,14 @@ export default async function FeesPage({ searchParams }: { searchParams: Promise
                 <TableHead>Student</TableHead>
                 <TableHead>Term</TableHead>
                 <TableHead>Amount</TableHead>
+                <TableHead>Paid</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Due</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {invoices.length === 0 && <TableRow><TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+              {invoices.length === 0 && <TableRow><TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                 <EmptyState
                   icon={CreditCard}
                   title="No invoices found"
@@ -104,7 +105,8 @@ export default async function FeesPage({ searchParams }: { searchParams: Promise
                   <TableCell className="font-medium">{inv.student.firstName} {inv.student.lastName}</TableCell>
                   <TableCell className="text-xs">{inv.term.name}</TableCell>
                   <TableCell className="text-sm">{formatCurrency(Number(inv.totalAmount))}</TableCell>
-                  <TableCell><Badge variant={invoiceStatusVariant[inv.status] ?? 'outline'}>{inv.status}</Badge></TableCell>
+                  <TableCell className="text-sm">{formatCurrency(inv.payments.reduce((s, p) => s + Number(p.amount), 0))}</TableCell>
+                  <TableCell><Badge variant={invoiceStatusVariant[inv.status] ?? 'outline'}>{feeStatusLabel[inv.status] ?? inv.status}</Badge></TableCell>
                   <TableCell className="text-xs">{new Date(inv.dueDate).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right"><Button variant="outline" size="sm" nativeButton={false} render={<Link href={`/admin/fees/${inv.id}`} />}>View</Button></TableCell>
                 </TableRow>

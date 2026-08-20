@@ -15,7 +15,7 @@ export function ConfirmPaymentButton({ paymentId }: { paymentId: string }) {
   return (
     <form action={action} className="inline">
       {state.status === 'error' && state.message && <p role="alert" className="mb-1 text-xs text-destructive">{state.message}</p>}
-      <Button variant="outline" size="sm" type="submit" disabled={pending}>{pending && <Loader2 className="animate-spin" />}Confirm</Button>
+      <Button variant="outline" size="sm" type="submit" disabled={pending}>{pending && <Loader2 className="animate-spin" />} Confirm</Button>
     </form>
   )
 }
@@ -29,7 +29,7 @@ export function RejectPaymentButton({ paymentId }: { paymentId: string }) {
   return (
     <form action={action} className="inline">
       {state.status === 'error' && state.message && <p role="alert" className="mb-1 text-xs text-destructive">{state.message}</p>}
-      <Button variant="destructive" size="sm" type="submit" disabled={pending}>{pending && <Loader2 className="animate-spin" />}Reject</Button>
+      <Button variant="destructive" size="sm" type="submit" disabled={pending}>{pending && <Loader2 className="animate-spin" />} Reject</Button>
     </form>
   )
 }

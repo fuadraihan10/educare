@@ -8,7 +8,7 @@ import { getInvoice } from '@/lib/fees'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageHeader } from '@/components/page-header'
 import { Badge } from '@/components/ui/badge'
-import { invoiceStatusVariant } from '@/lib/status-variants'
+import { invoiceStatusVariant, feeStatusLabel, paymentStatusLabel } from '@/lib/status-variants'
 import { ConfirmPaymentButton, RejectPaymentButton } from '@/components/fees/payment-actions'
 import { CancelInvoiceButton, DeleteInvoiceButton } from '@/components/fees/invoice-actions'
 import { formatCurrency } from '@/lib/format'
@@ -37,7 +37,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           </Link>
         }
       >
-        <Badge variant={invoiceStatusVariant[invoice.status] ?? 'outline'} className="text-xs">{invoice.status}</Badge>
+        <Badge variant={invoiceStatusVariant[invoice.status] ?? 'outline'} className="text-xs">{feeStatusLabel[invoice.status] ?? invoice.status}</Badge>
         {canCancel && <CancelInvoiceButton invoiceId={id} invoiceNo={invoice.invoiceNo} />}
         {canDelete && <DeleteInvoiceButton invoiceId={id} invoiceNo={invoice.invoiceNo} />}
       </PageHeader>
@@ -128,7 +128,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                       <td className="px-4 py-3">{p.method}</td>
                       <td className="px-4 py-3 text-xs text-muted-foreground font-mono">{p.reference ?? '—'}</td>
                       <td className="px-4 py-3">
-                        <Badge variant={p.status === 'CONFIRMED' ? 'default' : p.status === 'PENDING' ? 'secondary' : 'destructive'} className="text-xs">{p.status}</Badge>
+                        <Badge variant={p.status === 'CONFIRMED' ? 'default' : p.status === 'PENDING' ? 'secondary' : 'destructive'} className="text-xs">{paymentStatusLabel[p.status] ?? p.status}</Badge>
                       </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{p.submittedBy?.name ?? '—'}</td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{p.confirmedBy?.name ?? '—'}</td>

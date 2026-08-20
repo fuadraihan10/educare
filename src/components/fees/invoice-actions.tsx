@@ -46,7 +46,7 @@ export function CancelInvoiceButton({ invoiceId, invoiceNo }: { invoiceId: strin
             )}
             <AlertDialogAction type="submit" variant="destructive" disabled={pending}>
               {pending && <Loader2 className="animate-spin" />}
-              Cancel invoice
+              {' '}Cancel invoice
             </AlertDialogAction>
           </form>
         </AlertDialogFooter>
@@ -86,7 +86,7 @@ export function DeleteInvoiceButton({ invoiceId, invoiceNo }: { invoiceId: strin
             )}
             <AlertDialogAction type="submit" variant="destructive" disabled={pending}>
               {pending && <Loader2 className="animate-spin" />}
-              Delete invoice
+              {' '}Delete invoice
             </AlertDialogAction>
           </form>
         </AlertDialogFooter>

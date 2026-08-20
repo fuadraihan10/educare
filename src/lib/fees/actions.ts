@@ -131,8 +131,9 @@ export async function submitPayment(invoiceId: string, _prev: PaymentFormState, 
   if (!amount || amount <= 0) return { status: 'error', message: 'Invalid payment amount.' }
   if (!method) return { status: 'error', message: 'Payment method is required.' }
 
-  const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId }, select: { id: true, status: true, totalAmount: true, studentId: true } })
+  const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId }, select: { id: true, invoiceNo: true, status: true, totalAmount: true, studentId: true } })
   if (!invoice) return { status: 'error', message: 'Invoice not found.' }
+  if (invoice.status === 'DRAFT') return { status: 'error', message: 'Cannot submit payment for a draft invoice.' }
   if (invoice.status === 'PAID') return { status: 'error', message: 'Invoice is already fully paid.' }
   if (invoice.status === 'CANCELLED') return { status: 'error', message: 'Invoice has been cancelled.' }
 
@@ -173,7 +174,7 @@ export async function submitPayment(invoiceId: string, _prev: PaymentFormState, 
   const invoiceStudent = await prisma.invoice.findUnique({ where: { id: invoiceId }, select: { student: { select: { userId: true } } } })
   await deliverNotificationToRole('ADMIN', {
     title: 'Payment Submitted',
-    body: `A payment of ৳${amount.toLocaleString()} has been submitted for invoice ${invoiceId.slice(0, 8)}... via ${method}.`,
+    body: `A payment of ৳${amount.toLocaleString()} has been submitted for invoice ${invoice.invoiceNo} via ${method}.`,
     type: 'info',
     category: 'fees',
     entity: 'Payment',
@@ -258,12 +259,12 @@ export async function rejectPayment(paymentId: string, _prev: PaymentFormState, 
   await prisma.payment.update({ where: { id: paymentId }, data: { status: 'REJECTED' } })
   await auditLog({ actorId: actor.id, action: 'REJECT_PAYMENT', entity: 'Payment', entityId: paymentId })
 
-  const rejectedInvoice = await prisma.invoice.findUnique({ where: { id: payment.invoiceId }, select: { student: { select: { userId: true } } } })
+  const rejectedInvoice = await prisma.invoice.findUnique({ where: { id: payment.invoiceId }, select: { invoiceNo: true, student: { select: { userId: true } } } })
   if (rejectedInvoice?.student?.userId) {
     await deliverNotification({
       userId: rejectedInvoice.student.userId,
       title: 'Payment Rejected',
-      body: `Your payment for invoice ${payment.invoiceId.slice(0, 8)}... has been rejected. Please contact the office for details.`,
+      body: `Your payment for invoice ${rejectedInvoice.invoiceNo ?? payment.invoiceId.slice(0, 8) + '...'} has been rejected. Please contact the office for details.`,
       type: 'error',
       category: 'fees',
       entity: 'Payment',
@@ -379,13 +380,13 @@ export async function cancelInvoice(id: string, _prev: InvoiceActionState, _form
   return { status: 'success', message: 'Invoice cancelled.' }
 }
 
-export async function deleteInvoice(id: string): Promise<void> {
+export async function deleteInvoice(id: string): Promise<{ success: boolean; message: string }> {
   const actor = await requireRole('SUPER_ADMIN', 'ADMIN')
   const invoice = await prisma.invoice.findUnique({ where: { id }, select: { id: true, invoiceNo: true, status: true } })
-  if (!invoice) return
+  if (!invoice) return { success: false, message: 'Invoice not found.' }
 
   const hasPayments = await prisma.payment.findFirst({ where: { invoiceId: id, status: { in: ['PENDING', 'CONFIRMED'] } }, select: { id: true } })
-  if (hasPayments) return
+  if (hasPayments) return { success: false, message: 'Cannot delete invoice with pending or confirmed payments.' }
 
   await prisma.$transaction(async (tx) => {
     await tx.payment.deleteMany({ where: { invoiceId: id } })
@@ -395,17 +396,15 @@ export async function deleteInvoice(id: string): Promise<void> {
 
   await auditLog({ actorId: actor.id, action: 'DELETE', entity: 'Invoice', entityId: id, details: { invoiceNo: invoice.invoiceNo } })
   revalidatePath('/admin/fees')
+  return { success: true, message: 'Invoice deleted.' }
 }
 
 export async function deleteInvoiceAction(_prev: InvoiceFormState, formData: FormData): Promise<InvoiceFormState> {
   const id = String(formData.get('invoiceId') ?? '')
   if (!id) return { status: 'error', message: 'Missing invoice ID.' }
-  try {
-    await deleteInvoice(id)
-    return { status: 'success', message: 'Invoice deleted.' }
-  } catch {
-    return { status: 'error', message: 'Failed to delete invoice.' }
-  }
+  const result = await deleteInvoice(id)
+  if (!result.success) return { status: 'error', message: result.message }
+  return { status: 'success', message: result.message }
 }
 
 export async function markOverdueInvoices(): Promise<number> {

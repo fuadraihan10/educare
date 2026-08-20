@@ -12,6 +12,7 @@ export type InvoiceListItem = {
   student: { id: string; firstName: string; lastName: string; admissionNo: string }
   term: { name: string }
   _count: { payments: number }
+  payments: { amount: unknown; status: string }[]
 }
 
 export async function listInvoices(input: {
@@ -43,6 +44,7 @@ export async function listInvoices(input: {
         student: { select: { id: true, firstName: true, lastName: true, admissionNo: true } },
         term: { select: { name: true } },
         _count: { select: { payments: true } },
+        payments: { select: { amount: true, status: true }, where: { status: 'CONFIRMED' } },
       },
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * pageSize,

@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { requirePage } from '@/lib/permissions'
 import { prisma } from '@/lib/db'
 import { Badge } from '@/components/ui/badge'
-import { feeStatusVariant } from '@/lib/status-variants'
+import { feeStatusVariant, feeStatusLabel } from '@/lib/status-variants'
 import dayjs from 'dayjs'
 import { PageHeader } from '@/components/page-header'
 import { EmptyState } from '@/components/empty-state'
@@ -28,7 +28,7 @@ export default async function ParentFeesPage() {
   })
 
   const totalAmount = invoices.reduce((s, i) => s + Number(i.totalAmount), 0)
-  const totalPaid = invoices.reduce((s, i) => s + i.payments.reduce((ps, p) => ps + Number(p.amount), 0), 0)
+  const totalPaid = invoices.reduce((s, i) => s + i.payments.filter((p) => p.status === 'CONFIRMED').reduce((ps, p) => ps + Number(p.amount), 0), 0)
   const totalRemaining = totalAmount - totalPaid
   const paidCount = invoices.filter((i) => i.status === 'PAID').length
   const pendingCount = invoices.filter((i) => i.status !== 'PAID' && i.status !== 'CANCELLED').length
@@ -69,7 +69,7 @@ export default async function ParentFeesPage() {
                 </td></tr>
               )}
               {invoices.map((inv) => {
-                const paid = inv.payments.reduce((s, p) => s + Number(p.amount), 0)
+                const paid = inv.payments.filter((p) => p.status === 'CONFIRMED').reduce((s, p) => s + Number(p.amount), 0)
                 return (
                   <tr key={inv.id} className="border-b border-border/30 last:border-0 hover:bg-muted/40 transition-colors">
                     <td className="px-6 py-3.5 font-medium">{inv.student.firstName} {inv.student.lastName}</td>
@@ -78,7 +78,7 @@ export default async function ParentFeesPage() {
                     <td className="px-6 py-3.5 font-medium">{formatCurrency(Number(inv.totalAmount))}</td>
                     <td className="px-6 py-3.5 text-muted-foreground">{formatCurrency(paid)}</td>
                     <td className="px-6 py-3.5">
-                      <Badge variant={feeStatusVariant[inv.status] ?? 'outline'} className="font-medium">{inv.status}</Badge>
+                      <Badge variant={feeStatusVariant[inv.status] ?? 'outline'} className="font-medium">{feeStatusLabel[inv.status] ?? inv.status}</Badge>
                     </td>
                     <td className="px-6 py-3.5 text-xs text-muted-foreground">{dayjs(inv.dueDate).format('DD MMM YYYY')}</td>
                   </tr>

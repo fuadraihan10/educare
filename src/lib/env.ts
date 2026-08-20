@@ -12,6 +12,7 @@ const envSchema = z.object({
   SMTP_PASSWORD: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
   UPLOAD_STORAGE_DIR: z.string().default('storage'),
+  BLOB_READ_WRITE_TOKEN: z.string().optional(),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   REDIS_URL: z.string().optional(),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),

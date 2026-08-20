@@ -33,6 +33,29 @@ export const invoiceStatusVariant: Record<string, Variant> = {
   DRAFT: 'outline',
 }
 
+export const feeStatusLabel: Record<string, string> = {
+  DRAFT: 'Draft',
+  ISSUED: 'Pending',
+  PARTIAL: 'Partial',
+  PAID: 'Paid',
+  OVERDUE: 'Overdue',
+  CANCELLED: 'Cancelled',
+}
+
+export const paymentStatusVariant: Record<string, Variant> = {
+  PENDING: 'secondary',
+  CONFIRMED: 'default',
+  REJECTED: 'destructive',
+  REFUNDED: 'outline',
+}
+
+export const paymentStatusLabel: Record<string, string> = {
+  PENDING: 'Pending',
+  CONFIRMED: 'Confirmed',
+  REJECTED: 'Rejected',
+  REFUNDED: 'Refunded',
+}
+
 export const userStatusVariant: Record<string, Variant> = {
   ACTIVE: 'default',
   INACTIVE: 'secondary',
