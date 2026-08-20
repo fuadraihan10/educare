@@ -68,14 +68,23 @@ export async function saveFile(input: {
   const filename = `${randomUUID()}.${ext}`
   const storageKey = `${input.category.toLowerCase()}/${filename}`
   const abs = resolveSafePath(storageKey)
-  await mkdir(path.dirname(abs), { recursive: true })
-  await writeFile(abs, input.data, { flag: 'wx' })
+  try {
+    await mkdir(path.dirname(abs), { recursive: true })
+    await writeFile(abs, input.data, { flag: 'wx' })
+  } catch (e) {
+    throw new StorageError(`File save failed: ${(e as Error).message}`)
+  }
   return { storageKey, filename, mimeType: input.mimeType, size: input.data.length }
 }
 
 export async function readFile(storageKey: string): Promise<{ data: Buffer; mimeType: string }> {
   const abs = resolveSafePath(storageKey)
-  const data = await fsReadFile(abs)
+  let data: Buffer
+  try {
+    data = await fsReadFile(abs)
+  } catch (e) {
+    throw new StorageError(`File read failed: ${(e as Error).message}`)
+  }
   const ext = storageKey.split('.').pop()?.toLowerCase()
   const mimeType = Object.entries(mimeRegistry).find(([, v]) => v.ext === ext)?.[0] ?? 'application/octet-stream'
   return { data, mimeType }
@@ -83,5 +92,9 @@ export async function readFile(storageKey: string): Promise<{ data: Buffer; mime
 
 export async function deleteFile(storageKey: string): Promise<void> {
   const abs = resolveSafePath(storageKey)
-  await unlink(abs)
+  try {
+    await unlink(abs)
+  } catch (e) {
+    throw new StorageError(`File delete failed: ${(e as Error).message}`)
+  }
 }

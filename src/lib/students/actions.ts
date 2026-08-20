@@ -1,6 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { isRedirectError } from 'next/dist/client/components/redirect-error'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { hash } from 'bcryptjs'
@@ -207,10 +208,10 @@ export async function createStudent(_prev: StudentFormState, formData: FormData)
     return { status: 'success', message: `Student created. Reg No: ${regNo}`, regNo, studentId: id }
   } catch (e) {
     if (photo) await deleteFile(photo.storageKey).catch(() => {})
-    if (e instanceof StorageError || e instanceof Prisma.PrismaClientKnownRequestError) {
-      return { status: 'error', message: message(e) }
+    if (e instanceof StorageError) {
+      return { status: 'error', message: e.message }
     }
-    throw e
+    return { status: 'error', message: 'Something went wrong. Please try again.' }
   }
 }
 
@@ -315,10 +316,11 @@ export async function updateStudent(id: string, _prev: StudentFormState, formDat
     redirect(`/admin/students/${id}`)
   } catch (e) {
     if (photo) await deleteFile(photo.storageKey).catch(() => {})
-    if (e instanceof StorageError || e instanceof Prisma.PrismaClientKnownRequestError) {
-      return { status: 'error', message: message(e) }
+    if (e instanceof StorageError) {
+      return { status: 'error', message: e.message }
     }
-    throw e
+    if (isRedirectError(e)) throw e
+    return { status: 'error', message: 'Something went wrong. Please try again.' }
   }
 }
 
@@ -384,8 +386,8 @@ export async function uploadStudentFile(studentId: string, _prev: StudentFormSta
     revalidatePath(`/admin/students/${studentId}`)
     return { status: 'success', message: 'File uploaded.' }
   } catch (e) {
-    if (e instanceof StorageError) return { status: 'error', message: 'File upload failed. Please try again.' }
-    throw e
+    if (e instanceof StorageError) return { status: 'error', message: e.message }
+    return { status: 'error', message: 'File upload failed. Please try again.' }
   }
 }
 
