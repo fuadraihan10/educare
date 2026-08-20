@@ -11,7 +11,7 @@ A full-featured, role-based school management system built with **Next.js 16**, 
 | Framework     | Next.js 16 (App Router, Turbopack)            |
 | Language      | TypeScript 5.9 (strict mode)                  |
 | UI            | Tailwind CSS v4, shadcn/ui, Lucide icons      |
-| Database      | PostgreSQL 16                                 |
+| Database      | PostgreSQL 16 (Neon serverless)             |
 | ORM           | Prisma 7 (driver adapter mode)                |
 | Auth          | NextAuth v5 (JWT + credentials provider)      |
 | Validation    | Zod 4 (shared client + server schemas)        |
@@ -29,7 +29,6 @@ A full-featured, role-based school management system built with **Next.js 16**, 
 
 - **Node.js** v24+ (`node -v`)
 - **npm** v11+ (`npm -v`)
-- **PostgreSQL** v16+ (local install OR Docker)
 - **Git**
 
 ### Clone and Install
@@ -52,44 +51,32 @@ Open `.env` and fill in the required values:
 
 | Variable              | Required | Description                                                                 |
 | --------------------- | -------- | --------------------------------------------------------------------------- |
-| `DATABASE_URL`        | Yes      | PostgreSQL connection string                                                |
+| `DATABASE_URL`        | Yes      | Neon PostgreSQL connection string (used for local dev and deploy)           |
 | `AUTH_SECRET`         | Yes      | Generate with: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` |
 | `UPLOAD_STORAGE_DIR`  | No       | Local file upload directory (default: `storage`)                            |
 | `BLOB_READ_WRITE_TOKEN` | No    | Vercel Blob token for production file storage                               |
 
 ### Database Setup
 
-**Option A: Local PostgreSQL (default)**
+This project uses **Neon** as the single database for both local development and deployment.
 
 ```bash
-npm run db:init      # Creates a local Postgres cluster on port 5433
-npm run db:reset     # Drops DB, runs migrations, and seeds demo data
+npm run db    # Reset, migrate, seed, and open Prisma Studio
 ```
 
-Local DB runs on `127.0.0.1:5433` with user `sms` and database `sms`.
+This single command will:
+1. **Drop** the existing database
+2. **Re-create** and **migrate** the schema
+3. **Seed** demo data (users, students, teachers, classes, etc.)
+4. **Open Prisma Studio** in your browser
+
+Individual commands for specific tasks:
 
 ```bash
-npm run db:start     # Start the local Postgres cluster
-npm run db:stop      # Stop the local Postgres cluster
-npm run db:studio    # Open Prisma Studio (visual DB browser)
-```
-
-**Option B: Docker**
-
-```bash
-# Set environment variables in .env first
-docker-compose up -d
-docker-compose exec app npx prisma migrate deploy
-docker-compose exec app npx tsx prisma/seed.ts
-```
-
-**Option C: External PostgreSQL (Neon, Supabase, etc.)**
-
-Set `DATABASE_URL` in `.env` to your connection string, then:
-
-```bash
-npm run db:deploy    # Run migrations
-npm run db:seed      # Seed demo data
+npm run db:migrate   # Run pending migrations
+npm run db:deploy    # Deploy migrations (production)
+npm run db:seed      # Seed demo data (idempotent)
+npm run db:studio    # Open Prisma Studio
 ```
 
 ---
@@ -116,18 +103,19 @@ The dev server uses **Turbopack** for fast hot-reloading. The app will be availa
 | `npm run test`       | Run unit tests (Vitest)                 |
 | `npm run test:watch` | Run tests in watch mode                 |
 | `npm run e2e`        | Run end-to-end tests (Playwright)       |
+| `npm run db`         | Reset + migrate + seed + open Studio    |
 | `npm run db:studio`  | Open Prisma Studio (visual DB browser)  |
 
 ---
 
 ## Re-Seeding the Database
 
-> **Warning: This will permanently delete all data in the database and replace it with fresh demo data. Do NOT run this on a production database or any database with real user data.**
+> **Warning: This will permanently delete all data in the Neon database and replace it with fresh demo data. Do NOT run this on a production database or any database with real user data.**
 
 If you want to reset the database back to its initial demo state:
 
 ```bash
-npm run db:reset
+npm run db
 ```
 
 This single command will:
@@ -135,6 +123,7 @@ This single command will:
 1. **Drop** the existing database
 2. **Re-run** all Prisma migrations from scratch
 3. **Seed** the database with demo data (users, students, teachers, classes, subjects, attendance, exams, fees, announcements, etc.)
+4. **Open** Prisma Studio so you can inspect the data
 
 If you only want to re-run the seed script without dropping/migrating (e.g. after adding new seed data):
 
@@ -142,7 +131,7 @@ If you only want to re-run the seed script without dropping/migrating (e.g. afte
 npm run db:seed
 ```
 
-> `db:seed` is idempotent-safe for most models (uses `upsert`), but running `db:reset` is the cleanest way to get a known starting state.
+> `db:seed` is idempotent-safe for most models (uses `upsert`), but running `npm run db` is the cleanest way to get a known starting state.
 
 ---
 
@@ -555,7 +544,8 @@ student/
       validations/           # Zod schemas (shared client + server)
     generated/prisma/        # Generated Prisma client (do not edit)
   scripts/
-    db/                      # Local PostgreSQL cluster scripts (init, start, stop, reset)
+    db/
+      reset.mjs                # Reset Neon database (drop, migrate, seed, open Studio)
   e2e/                       # Playwright end-to-end tests
   tests/                     # Additional unit tests
 ```

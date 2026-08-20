@@ -35,6 +35,10 @@ export async function generateMetadata(): Promise<Metadata> {
       template: `%s · ${name}`,
     },
     description: `Student management system for ${name}`,
+    icons: {
+      icon: '/icon.png',
+      apple: '/apple-touch-icon.png',
+    },
   };
 }
 
