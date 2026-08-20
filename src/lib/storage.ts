@@ -3,7 +3,6 @@ import 'server-only'
 import { mkdir, writeFile, readFile as fsReadFile, unlink } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
-import { put, head, del } from '@vercel/blob'
 
 import { FileCategory } from '@/generated/prisma/client'
 
@@ -77,6 +76,7 @@ export async function saveFile(input: {
 
   try {
     if (useBlob) {
+      const { put } = await import('@vercel/blob')
       await put(storageKey, input.data, {
         access: 'private',
         contentType: input.mimeType,
@@ -95,6 +95,7 @@ export async function saveFile(input: {
 export async function readFile(storageKey: string): Promise<{ data: Buffer; mimeType: string }> {
   try {
     if (useBlob) {
+      const { head } = await import('@vercel/blob')
       const blob = await head(storageKey)
       const response = await fetch(blob.url, {
         headers: { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` },
@@ -117,6 +118,7 @@ export async function readFile(storageKey: string): Promise<{ data: Buffer; mime
 export async function deleteFile(storageKey: string): Promise<void> {
   try {
     if (useBlob) {
+      const { del } = await import('@vercel/blob')
       await del(storageKey)
     } else {
       const abs = resolveSafePath(storageKey)
